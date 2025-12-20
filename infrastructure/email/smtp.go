@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net"
 	"net/smtp"
 	"strings"
@@ -84,13 +85,21 @@ func (s *SMTPClient) Send(ctx context.Context, msg emailservice.Message) error {
 	if err != nil {
 		return fmt.Errorf("email: dial SMTP: %w", err)
 	}
-	defer conn.Close()
+	defer func() {
+		if err := conn.Close(); err != nil {
+			log.Printf("email: close SMTP connection: %v", err)
+		}
+	}()
 
 	client, err := smtp.NewClient(conn, s.host)
 	if err != nil {
 		return fmt.Errorf("email: create SMTP client: %w", err)
 	}
-	defer client.Close()
+	defer func() {
+		if err := client.Close(); err != nil {
+			log.Printf("email: close SMTP client: %v", err)
+		}
+	}()
 
 	if !s.useTLS && s.useStartTLS {
 		tlsConfig := &tls.Config{
@@ -156,7 +165,7 @@ func writeMessage(w io.Writer, from string, msg emailservice.Message) error {
 
 	builder := &strings.Builder{}
 	for key, value := range headers {
-		builder.WriteString(fmt.Sprintf("%s: %s\r\n", key, value))
+		fmt.Fprintf(builder, "%s: %s\r\n", key, value)
 	}
 	builder.WriteString("\r\n")
 	builder.WriteString(msg.Body)

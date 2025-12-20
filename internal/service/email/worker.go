@@ -76,8 +76,7 @@ func (w *Worker) Run(ctx context.Context) {
 	go w.requeueLoop(ctx)
 
 	for {
-		select {
-		case <-ctx.Done():
+		if ctx.Err() != nil {
 			return
 		}
 

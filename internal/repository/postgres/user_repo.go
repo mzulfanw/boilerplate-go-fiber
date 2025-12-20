@@ -90,7 +90,6 @@ func buildUserListFilters(filter userdomain.ListFilter) (string, []any) {
 	if filter.IsActive != nil {
 		args = append(args, *filter.IsActive)
 		conditions = append(conditions, fmt.Sprintf("is_active = $%d", index))
-		index++
 	}
 
 	if len(conditions) == 0 {
