@@ -237,3 +237,23 @@ func (r *AuthRepository) ResetLoginFailures(ctx context.Context, userID string) 
 	_, err := r.pool.Exec(ctx, query, userID)
 	return err
 }
+
+func (r *AuthRepository) UpdatePassword(ctx context.Context, userID, passwordHash string) error {
+	const query = `
+		UPDATE users
+		SET password_hash = $2,
+			token_version = token_version + 1,
+			failed_login_attempts = 0,
+			locked_until = NULL
+		WHERE id = $1
+	`
+
+	tag, err := r.pool.Exec(ctx, query, userID, passwordHash)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return authdomain.ErrNotFound
+	}
+	return nil
+}

@@ -1,6 +1,19 @@
 version: "3.8"
 
 services:
+  app:
+    image: boilerplate-go-fiber
+    container_name: boilerplate-go-fiber
+    env_file:
+      - .env
+    environment:
+      REDIS_ADDR: redis:6379
+      POSTGRES_HOST: postgres
+    ports:
+      - "3000:3000"
+    depends_on:
+      - redis
+      - postgres
   redis:
     image: redis:7
     container_name: redis

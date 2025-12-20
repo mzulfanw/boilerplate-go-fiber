@@ -4,10 +4,13 @@ import (
 	"context"
 	"time"
 
+	emailinfra "github.com/mzulfanw/boilerplate-go-fiber/infrastructure/email"
 	"github.com/mzulfanw/boilerplate-go-fiber/infrastructure/postgres"
 	"github.com/mzulfanw/boilerplate-go-fiber/infrastructure/redis"
+	"github.com/mzulfanw/boilerplate-go-fiber/infrastructure/xendit"
 	"github.com/mzulfanw/boilerplate-go-fiber/internal/config"
 	authservice "github.com/mzulfanw/boilerplate-go-fiber/internal/service/auth"
+	emailservice "github.com/mzulfanw/boilerplate-go-fiber/internal/service/email"
 	httptransport "github.com/mzulfanw/boilerplate-go-fiber/internal/transport/http"
 	"github.com/sirupsen/logrus"
 )
@@ -17,7 +20,9 @@ type App struct {
 	shutdownTimeout time.Duration
 	cache           redis.Cache
 	db              postgres.DB
+	xenditClient    xendit.XenditClient
 	authService     *authservice.Service
+	emailWorker     *emailservice.Worker
 
 	refreshTokenCleanupInterval time.Duration
 }
@@ -32,7 +37,35 @@ func NewApp(cfg config.Config) (*App, error) {
 		_ = cache.Close()
 		return nil, err
 	}
-	registry, err := httpRouters(cfg, db)
+	xenditClient, err := xendit.New(cfg)
+	if err != nil {
+		_ = cache.Close()
+		db.Close()
+		return nil, err
+	}
+
+	emailQueue := emailservice.NewRedisQueue(cache, emailservice.QueueOptions{
+		Prefix: "email:queue",
+	})
+	emailSender, err := emailinfra.NewSMTP(cfg)
+	if err != nil {
+		_ = cache.Close()
+		db.Close()
+		return nil, err
+	}
+
+	var emailWorker *emailservice.Worker
+	var emailService *emailservice.Service
+	var emailRenderer *emailservice.Renderer
+	if emailSender != nil {
+		emailService = emailservice.NewService(emailQueue)
+		emailRenderer = emailservice.NewRenderer(cfg.EmailTemplateDir)
+		emailWorker = emailservice.NewWorker(emailQueue, emailSender, emailservice.WorkerOptions{
+			RecoverInFlight: true,
+		})
+	}
+
+	registry, err := httpRouters(cfg, db, xenditClient, cache, emailService, emailRenderer)
 	if err != nil {
 		_ = cache.Close()
 		db.Close()
@@ -45,7 +78,9 @@ func NewApp(cfg config.Config) (*App, error) {
 		shutdownTimeout:             cfg.ShutdownTimeout,
 		cache:                       cache,
 		db:                          db,
+		xenditClient:                xenditClient,
 		authService:                 registry.AuthService,
+		emailWorker:                 emailWorker,
 		refreshTokenCleanupInterval: cfg.RefreshTokenCleanupInterval,
 	}, nil
 }
@@ -56,6 +91,7 @@ func (a *App) Run(ctx context.Context) error {
 	errChan := make(chan error, 1)
 
 	a.startRefreshTokenCleanup(ctx)
+	a.startEmailWorker(ctx)
 
 	go func() {
 		errChan <- a.httpServer.Start()
@@ -103,6 +139,13 @@ func (a *App) startRefreshTokenCleanup(ctx context.Context) {
 			}
 		}
 	}()
+}
+
+func (a *App) startEmailWorker(ctx context.Context) {
+	if a == nil || a.emailWorker == nil {
+		return
+	}
+	go a.emailWorker.Run(ctx)
 }
 
 func (a *App) closeResources() {

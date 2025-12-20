@@ -45,4 +45,6 @@ func (r *Router) Register(app *fiber.App) {
 	}
 	group.Post("/refresh", r.handler.Refresh)
 	group.Post("/logout", r.handler.Logout)
+	group.Post("/forgot-password", r.handler.ForgotPassword)
+	group.Post("/reset-password", r.handler.ResetPassword)
 }

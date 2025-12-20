@@ -9,6 +9,7 @@ import (
 	rbacdomain "github.com/mzulfanw/boilerplate-go-fiber/internal/domain/rbac"
 	rbacusecase "github.com/mzulfanw/boilerplate-go-fiber/internal/service/rbac"
 	"github.com/mzulfanw/boilerplate-go-fiber/internal/transport/http/response"
+	"github.com/mzulfanw/boilerplate-go-fiber/internal/transport/http/validation"
 )
 
 type Handler struct {
@@ -52,9 +53,9 @@ func (h *Handler) ListRoles(c *fiber.Ctx) error {
 // @Failure 404 {object} response.Response
 // @Router /rbac/roles/{id} [get]
 func (h *Handler) GetRole(c *fiber.Ctx) error {
-	roleID := strings.TrimSpace(c.Params("id"))
-	if roleID == "" {
-		return fiber.NewError(fiber.StatusBadRequest, "role id is required")
+	roleID, err := validation.RequireParam(c.Params("id"), "role id")
+	if err != nil {
+		return err
 	}
 
 	role, err := h.service.GetRole(c.UserContext(), roleID)
@@ -83,13 +84,10 @@ func (h *Handler) GetRole(c *fiber.Ctx) error {
 // @Router /rbac/roles [post]
 func (h *Handler) CreateRole(c *fiber.Ctx) error {
 	var req RoleRequest
-	if err := c.BodyParser(&req); err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, "invalid request body")
+	if err := validation.ParseAndValidate(c, &req); err != nil {
+		return err
 	}
 	req.Name = strings.TrimSpace(req.Name)
-	if req.Name == "" {
-		return fiber.NewError(fiber.StatusBadRequest, "name is required")
-	}
 
 	role, err := h.service.CreateRole(c.UserContext(), req.Name, req.Description)
 	if err != nil {
@@ -117,19 +115,16 @@ func (h *Handler) CreateRole(c *fiber.Ctx) error {
 // @Failure 404 {object} response.Response
 // @Router /rbac/roles/{id} [put]
 func (h *Handler) UpdateRole(c *fiber.Ctx) error {
-	roleID := strings.TrimSpace(c.Params("id"))
-	if roleID == "" {
-		return fiber.NewError(fiber.StatusBadRequest, "role id is required")
+	roleID, err := validation.RequireParam(c.Params("id"), "role id")
+	if err != nil {
+		return err
 	}
 
 	var req RoleRequest
-	if err := c.BodyParser(&req); err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, "invalid request body")
+	if err := validation.ParseAndValidate(c, &req); err != nil {
+		return err
 	}
 	req.Name = strings.TrimSpace(req.Name)
-	if req.Name == "" {
-		return fiber.NewError(fiber.StatusBadRequest, "name is required")
-	}
 
 	role, err := h.service.UpdateRole(c.UserContext(), roleID, req.Name, req.Description)
 	if err != nil {
@@ -155,9 +150,9 @@ func (h *Handler) UpdateRole(c *fiber.Ctx) error {
 // @Failure 404 {object} response.Response
 // @Router /rbac/roles/{id} [delete]
 func (h *Handler) DeleteRole(c *fiber.Ctx) error {
-	roleID := strings.TrimSpace(c.Params("id"))
-	if roleID == "" {
-		return fiber.NewError(fiber.StatusBadRequest, "role id is required")
+	roleID, err := validation.RequireParam(c.Params("id"), "role id")
+	if err != nil {
+		return err
 	}
 
 	if err := h.service.DeleteRole(c.UserContext(), roleID); err != nil {
@@ -204,9 +199,9 @@ func (h *Handler) ListPermissions(c *fiber.Ctx) error {
 // @Failure 404 {object} response.Response
 // @Router /rbac/permissions/{id} [get]
 func (h *Handler) GetPermission(c *fiber.Ctx) error {
-	permissionID := strings.TrimSpace(c.Params("id"))
-	if permissionID == "" {
-		return fiber.NewError(fiber.StatusBadRequest, "permission id is required")
+	permissionID, err := validation.RequireParam(c.Params("id"), "permission id")
+	if err != nil {
+		return err
 	}
 
 	permission, err := h.service.GetPermission(c.UserContext(), permissionID)
@@ -235,13 +230,10 @@ func (h *Handler) GetPermission(c *fiber.Ctx) error {
 // @Router /rbac/permissions [post]
 func (h *Handler) CreatePermission(c *fiber.Ctx) error {
 	var req PermissionRequest
-	if err := c.BodyParser(&req); err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, "invalid request body")
+	if err := validation.ParseAndValidate(c, &req); err != nil {
+		return err
 	}
 	req.Name = strings.TrimSpace(req.Name)
-	if req.Name == "" {
-		return fiber.NewError(fiber.StatusBadRequest, "name is required")
-	}
 
 	permission, err := h.service.CreatePermission(c.UserContext(), req.Name, req.Description)
 	if err != nil {
@@ -269,19 +261,16 @@ func (h *Handler) CreatePermission(c *fiber.Ctx) error {
 // @Failure 404 {object} response.Response
 // @Router /rbac/permissions/{id} [put]
 func (h *Handler) UpdatePermission(c *fiber.Ctx) error {
-	permissionID := strings.TrimSpace(c.Params("id"))
-	if permissionID == "" {
-		return fiber.NewError(fiber.StatusBadRequest, "permission id is required")
+	permissionID, err := validation.RequireParam(c.Params("id"), "permission id")
+	if err != nil {
+		return err
 	}
 
 	var req PermissionRequest
-	if err := c.BodyParser(&req); err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, "invalid request body")
+	if err := validation.ParseAndValidate(c, &req); err != nil {
+		return err
 	}
 	req.Name = strings.TrimSpace(req.Name)
-	if req.Name == "" {
-		return fiber.NewError(fiber.StatusBadRequest, "name is required")
-	}
 
 	permission, err := h.service.UpdatePermission(c.UserContext(), permissionID, req.Name, req.Description)
 	if err != nil {
@@ -307,9 +296,9 @@ func (h *Handler) UpdatePermission(c *fiber.Ctx) error {
 // @Failure 404 {object} response.Response
 // @Router /rbac/permissions/{id} [delete]
 func (h *Handler) DeletePermission(c *fiber.Ctx) error {
-	permissionID := strings.TrimSpace(c.Params("id"))
-	if permissionID == "" {
-		return fiber.NewError(fiber.StatusBadRequest, "permission id is required")
+	permissionID, err := validation.RequireParam(c.Params("id"), "permission id")
+	if err != nil {
+		return err
 	}
 
 	if err := h.service.DeletePermission(c.UserContext(), permissionID); err != nil {
@@ -334,9 +323,9 @@ func (h *Handler) DeletePermission(c *fiber.Ctx) error {
 // @Failure 404 {object} response.Response
 // @Router /rbac/roles/{id}/permissions [get]
 func (h *Handler) ListRolePermissions(c *fiber.Ctx) error {
-	roleID := strings.TrimSpace(c.Params("id"))
-	if roleID == "" {
-		return fiber.NewError(fiber.StatusBadRequest, "role id is required")
+	roleID, err := validation.RequireParam(c.Params("id"), "role id")
+	if err != nil {
+		return err
 	}
 
 	permissions, err := h.service.ListRolePermissions(c.UserContext(), roleID)
@@ -368,14 +357,14 @@ func (h *Handler) ListRolePermissions(c *fiber.Ctx) error {
 // @Failure 404 {object} response.Response
 // @Router /rbac/roles/{id}/permissions [put]
 func (h *Handler) UpdateRolePermissions(c *fiber.Ctx) error {
-	roleID := strings.TrimSpace(c.Params("id"))
-	if roleID == "" {
-		return fiber.NewError(fiber.StatusBadRequest, "role id is required")
+	roleID, err := validation.RequireParam(c.Params("id"), "role id")
+	if err != nil {
+		return err
 	}
 
 	var req RolePermissionsRequest
-	if err := c.BodyParser(&req); err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, "invalid request body")
+	if err := validation.ParseAndValidate(c, &req); err != nil {
+		return err
 	}
 
 	if err := h.service.ReplaceRolePermissions(c.UserContext(), roleID, req.PermissionIDs); err != nil {

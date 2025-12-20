@@ -85,6 +85,19 @@ func (c *Client) SetWithTTL(key string, value interface{}, ttl time.Duration) er
 	return c.client.Set(context.Background(), key, payload, ttl).Err()
 }
 
+func (c *Client) SetIfNotExists(key string, value interface{}, ttl time.Duration) (bool, error) {
+	if err := c.validateKey(key); err != nil {
+		return false, err
+	}
+
+	payload, err := marshalValue(value)
+	if err != nil {
+		return false, err
+	}
+
+	return c.client.SetNX(context.Background(), key, payload, ttl).Result()
+}
+
 func (c *Client) Get(key string) (interface{}, error) {
 	return c.GetBytes(key)
 }
@@ -111,6 +124,100 @@ func (c *Client) GetString(key string) (string, error) {
 		return "", err
 	}
 	return string(data), nil
+}
+
+func (c *Client) Ping(ctx context.Context) error {
+	if c == nil || c.client == nil {
+		return ErrNilClient
+	}
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	return c.client.Ping(ctx).Err()
+}
+
+func (c *Client) LPush(key string, values ...interface{}) (int64, error) {
+	if err := c.validateKey(key); err != nil {
+		return 0, err
+	}
+	return c.client.LPush(context.Background(), key, values...).Result()
+}
+
+func (c *Client) LRange(key string, start, stop int64) ([]string, error) {
+	if err := c.validateKey(key); err != nil {
+		return nil, err
+	}
+	return c.client.LRange(context.Background(), key, start, stop).Result()
+}
+
+func (c *Client) LRem(key string, count int64, value interface{}) (int64, error) {
+	if err := c.validateKey(key); err != nil {
+		return 0, err
+	}
+	return c.client.LRem(context.Background(), key, count, value).Result()
+}
+
+func (c *Client) BRPopLPush(source, destination string, timeout time.Duration) (string, error) {
+	if err := c.validateKey(source); err != nil {
+		return "", err
+	}
+	if err := c.validateKey(destination); err != nil {
+		return "", err
+	}
+
+	data, err := c.client.BRPopLPush(context.Background(), source, destination, timeout).Result()
+	if err != nil {
+		if errors.Is(err, goredis.Nil) {
+			return "", ErrKeyNotFound
+		}
+		return "", err
+	}
+	return data, nil
+}
+
+func (c *Client) ZAdd(key string, members ...ZMember) (int64, error) {
+	if err := c.validateKey(key); err != nil {
+		return 0, err
+	}
+	if len(members) == 0 {
+		return 0, nil
+	}
+
+	items := make([]goredis.Z, 0, len(members))
+	for _, member := range members {
+		items = append(items, goredis.Z{
+			Score:  member.Score,
+			Member: member.Member,
+		})
+	}
+
+	return c.client.ZAdd(context.Background(), key, items...).Result()
+}
+
+func (c *Client) ZRangeByScore(key, min, max string, count int64) ([]string, error) {
+	if err := c.validateKey(key); err != nil {
+		return nil, err
+	}
+
+	args := &goredis.ZRangeBy{
+		Min: min,
+		Max: max,
+	}
+	if count > 0 {
+		args.Count = count
+	}
+
+	return c.client.ZRangeByScore(context.Background(), key, args).Result()
+}
+
+func (c *Client) ZRem(key string, members ...interface{}) (int64, error) {
+	if err := c.validateKey(key); err != nil {
+		return 0, err
+	}
+	if len(members) == 0 {
+		return 0, nil
+	}
+	return c.client.ZRem(context.Background(), key, members...).Result()
 }
 
 func (c *Client) GetJSON(key string, dest interface{}) error {

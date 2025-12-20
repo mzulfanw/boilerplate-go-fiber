@@ -9,7 +9,9 @@ import (
 	rbacdomain "github.com/mzulfanw/boilerplate-go-fiber/internal/domain/rbac"
 	userdomain "github.com/mzulfanw/boilerplate-go-fiber/internal/domain/user"
 	userusecase "github.com/mzulfanw/boilerplate-go-fiber/internal/service/user"
+	"github.com/mzulfanw/boilerplate-go-fiber/internal/transport/http/query"
 	"github.com/mzulfanw/boilerplate-go-fiber/internal/transport/http/response"
+	"github.com/mzulfanw/boilerplate-go-fiber/internal/transport/http/validation"
 )
 
 type Handler struct {
@@ -25,11 +27,30 @@ func NewHandler(service *userusecase.Service) *Handler {
 // @Tags Users
 // @Security BearerAuth
 // @Produce json
-// @Success 200 {object} response.Response{data=[]UserResponse}
+// @Param page query int false "Page number"
+// @Param per_page query int false "Items per page"
+// @Param search query string false "Search by email or id"
+// @Param is_active query bool false "Filter by active status"
+// @Success 200 {object} response.Response{data=UserListResponse}
+// @Failure 400 {object} response.Response
 // @Failure 401 {object} response.Response
 // @Router /users [get]
 func (h *Handler) ListUsers(c *fiber.Ctx) error {
-	users, err := h.service.ListUsers(c.UserContext())
+	pagination, err := query.ParsePagination(c)
+	if err != nil {
+		return err
+	}
+	search := query.ParseSearch(c, "search")
+	isActive, err := query.ParseOptionalBool(c, "is_active")
+	if err != nil {
+		return err
+	}
+
+	result, err := h.service.ListUsers(c.UserContext(), userdomain.ListFilter{
+		Search:     search,
+		IsActive:   isActive,
+		Pagination: pagination,
+	})
 	if err != nil {
 		return mapUserError(err)
 	}
@@ -37,7 +58,10 @@ func (h *Handler) ListUsers(c *fiber.Ctx) error {
 	resp := response.Response{
 		Code:    fiber.StatusOK,
 		Message: "ok",
-		Data:    mapUsers(users),
+		Data: UserListResponse{
+			Items: mapUsers(result.Users),
+			Meta:  response.NewPageMeta(pagination.Page, pagination.PerPage, result.Total),
+		},
 	}
 	return c.Status(resp.Code).JSON(resp)
 }
@@ -53,9 +77,9 @@ func (h *Handler) ListUsers(c *fiber.Ctx) error {
 // @Failure 404 {object} response.Response
 // @Router /users/{id} [get]
 func (h *Handler) GetUser(c *fiber.Ctx) error {
-	userID := strings.TrimSpace(c.Params("id"))
-	if userID == "" {
-		return fiber.NewError(fiber.StatusBadRequest, "user id is required")
+	userID, err := validation.RequireParam(c.Params("id"), "user id")
+	if err != nil {
+		return err
 	}
 
 	user, err := h.service.GetUser(c.UserContext(), userID)
@@ -84,14 +108,10 @@ func (h *Handler) GetUser(c *fiber.Ctx) error {
 // @Router /users [post]
 func (h *Handler) CreateUser(c *fiber.Ctx) error {
 	var req CreateUserRequest
-	if err := c.BodyParser(&req); err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, "invalid request body")
+	if err := validation.ParseAndValidate(c, &req); err != nil {
+		return err
 	}
-
 	req.Email = strings.TrimSpace(req.Email)
-	if req.Email == "" || strings.TrimSpace(req.Password) == "" {
-		return fiber.NewError(fiber.StatusBadRequest, "email and password are required")
-	}
 
 	user, err := h.service.CreateUser(c.UserContext(), req.Email, req.Password, req.IsActive, req.RoleIDs)
 	if err != nil {
@@ -119,30 +139,18 @@ func (h *Handler) CreateUser(c *fiber.Ctx) error {
 // @Failure 404 {object} response.Response
 // @Router /users/{id} [put]
 func (h *Handler) UpdateUser(c *fiber.Ctx) error {
-	userID := strings.TrimSpace(c.Params("id"))
-	if userID == "" {
-		return fiber.NewError(fiber.StatusBadRequest, "user id is required")
+	userID, err := validation.RequireParam(c.Params("id"), "user id")
+	if err != nil {
+		return err
 	}
 
 	var req UpdateUserRequest
-	if err := c.BodyParser(&req); err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, "invalid request body")
+	if err := validation.ParseAndValidate(c, &req); err != nil {
+		return err
 	}
-
-	if req.Email == nil && req.Password == nil && req.IsActive == nil {
-		return fiber.NewError(fiber.StatusBadRequest, "no fields to update")
-	}
-
 	if req.Email != nil {
 		value := strings.TrimSpace(*req.Email)
-		if value == "" {
-			return fiber.NewError(fiber.StatusBadRequest, "email cannot be empty")
-		}
 		req.Email = &value
-	}
-
-	if req.Password != nil && strings.TrimSpace(*req.Password) == "" {
-		return fiber.NewError(fiber.StatusBadRequest, "password cannot be empty")
 	}
 
 	user, err := h.service.UpdateUser(c.UserContext(), userID, req.Email, req.Password, req.IsActive)
@@ -169,9 +177,9 @@ func (h *Handler) UpdateUser(c *fiber.Ctx) error {
 // @Failure 404 {object} response.Response
 // @Router /users/{id} [delete]
 func (h *Handler) DeleteUser(c *fiber.Ctx) error {
-	userID := strings.TrimSpace(c.Params("id"))
-	if userID == "" {
-		return fiber.NewError(fiber.StatusBadRequest, "user id is required")
+	userID, err := validation.RequireParam(c.Params("id"), "user id")
+	if err != nil {
+		return err
 	}
 
 	if err := h.service.DeleteUser(c.UserContext(), userID); err != nil {
@@ -196,9 +204,9 @@ func (h *Handler) DeleteUser(c *fiber.Ctx) error {
 // @Failure 404 {object} response.Response
 // @Router /users/{id}/roles [get]
 func (h *Handler) ListUserRoles(c *fiber.Ctx) error {
-	userID := strings.TrimSpace(c.Params("id"))
-	if userID == "" {
-		return fiber.NewError(fiber.StatusBadRequest, "user id is required")
+	userID, err := validation.RequireParam(c.Params("id"), "user id")
+	if err != nil {
+		return err
 	}
 
 	roles, err := h.service.ListUserRoles(c.UserContext(), userID)
@@ -230,14 +238,14 @@ func (h *Handler) ListUserRoles(c *fiber.Ctx) error {
 // @Failure 404 {object} response.Response
 // @Router /users/{id}/roles [put]
 func (h *Handler) UpdateUserRoles(c *fiber.Ctx) error {
-	userID := strings.TrimSpace(c.Params("id"))
-	if userID == "" {
-		return fiber.NewError(fiber.StatusBadRequest, "user id is required")
+	userID, err := validation.RequireParam(c.Params("id"), "user id")
+	if err != nil {
+		return err
 	}
 
 	var req UserRolesRequest
-	if err := c.BodyParser(&req); err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, "invalid request body")
+	if err := validation.ParseAndValidate(c, &req); err != nil {
+		return err
 	}
 
 	if err := h.service.ReplaceUserRoles(c.UserContext(), userID, req.RoleIDs); err != nil {

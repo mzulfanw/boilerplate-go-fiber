@@ -11,6 +11,21 @@ definitions:
       status:
         type: string
     type: object
+  github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.PageMeta:
+    properties:
+      has_next:
+        type: boolean
+      has_prev:
+        type: boolean
+      page:
+        type: integer
+      per_page:
+        type: integer
+      total:
+        type: integer
+      total_pages:
+        type: integer
+    type: object
   github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.ReadinessStatus:
     properties:
       app:
@@ -49,22 +64,47 @@ definitions:
       uptime:
         type: string
     type: object
+  internal_transport_http_auth.ForgotPasswordRequest:
+    properties:
+      email:
+        type: string
+    required:
+    - email
+    type: object
   internal_transport_http_auth.LoginRequest:
     properties:
       email:
         type: string
       password:
         type: string
+    required:
+    - email
+    - password
     type: object
   internal_transport_http_auth.LogoutRequest:
     properties:
       refresh_token:
         type: string
+    required:
+    - refresh_token
     type: object
   internal_transport_http_auth.RefreshRequest:
     properties:
       refresh_token:
         type: string
+    required:
+    - refresh_token
+    type: object
+  internal_transport_http_auth.ResetPasswordRequest:
+    properties:
+      password:
+        minLength: 8
+        type: string
+      token:
+        type: string
+    required:
+    - password
+    - token
     type: object
   internal_transport_http_auth.TokenResponse:
     properties:
@@ -77,12 +117,102 @@ definitions:
       token_type:
         type: string
     type: object
+  internal_transport_http_payment.BalanceResponse:
+    properties:
+      balance:
+        type: number
+    type: object
+  internal_transport_http_payment.CreateInvoiceRequest:
+    properties:
+      amount:
+        type: number
+      callback_virtual_account_id:
+        type: string
+      currency:
+        type: string
+      description:
+        type: string
+      external_id:
+        type: string
+      failure_redirect_url:
+        type: string
+      fees:
+        items:
+          $ref: '#/definitions/internal_transport_http_payment.InvoiceFeeRequest'
+        type: array
+      invoice_duration:
+        type: integer
+      items:
+        items:
+          $ref: '#/definitions/internal_transport_http_payment.InvoiceItemRequest'
+        type: array
+      locale:
+        type: string
+      metadata:
+        additionalProperties: {}
+        type: object
+      mid_label:
+        type: string
+      payer_email:
+        type: string
+      payment_methods:
+        items:
+          type: string
+        type: array
+      reminder_time:
+        type: integer
+      reminder_time_unit:
+        type: string
+      should_authenticate_credit_card:
+        type: boolean
+      should_send_email:
+        type: boolean
+      success_redirect_url:
+        type: string
+    required:
+    - amount
+    - external_id
+    type: object
+  internal_transport_http_payment.InvoiceFeeRequest:
+    properties:
+      type:
+        type: string
+      value:
+        minimum: 0
+        type: number
+    required:
+    - type
+    - value
+    type: object
+  internal_transport_http_payment.InvoiceItemRequest:
+    properties:
+      category:
+        type: string
+      name:
+        type: string
+      price:
+        minimum: 0
+        type: number
+      quantity:
+        minimum: 0
+        type: number
+      reference_id:
+        type: string
+      url:
+        type: string
+    required:
+    - name
+    - price
+    - quantity
+    type: object
   internal_transport_http_rbac.PermissionRequest:
     properties:
       description:
         type: string
       name:
         type: string
+    required:
+    - name
     type: object
   internal_transport_http_rbac.PermissionResponse:
     properties:
@@ -117,6 +247,8 @@ definitions:
         type: string
       name:
         type: string
+    required:
+    - name
     type: object
   internal_transport_http_rbac.RoleResponse:
     properties:
@@ -141,6 +273,9 @@ definitions:
         items:
           type: string
         type: array
+    required:
+    - email
+    - password
     type: object
   internal_transport_http_user.RoleResponse:
     properties:
@@ -161,6 +296,15 @@ definitions:
         type: boolean
       password:
         type: string
+    type: object
+  internal_transport_http_user.UserListResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/internal_transport_http_user.UserResponse'
+        type: array
+      meta:
+        $ref: '#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.PageMeta'
     type: object
   internal_transport_http_user.UserResponse:
     properties:
@@ -191,12 +335,845 @@ definitions:
       user_id:
         type: string
     type: object
+  invoice.AddressObject:
+    properties:
+      city:
+        allOf:
+        - $ref: '#/definitions/invoice.NullableString'
+        description: The city or locality within the address.
+      country:
+        allOf:
+        - $ref: '#/definitions/invoice.NullableString'
+        description: The country where the address is located.
+      postal_code:
+        allOf:
+        - $ref: '#/definitions/invoice.NullableString'
+        description: The postal code or ZIP code for the address.
+      province:
+        allOf:
+        - $ref: '#/definitions/invoice.NullableString'
+        description: The province or region within the country.
+      state:
+        allOf:
+        - $ref: '#/definitions/invoice.NullableString'
+        description: The state or administrative division within the country.
+      street_line1:
+        allOf:
+        - $ref: '#/definitions/invoice.NullableString'
+        description: The first line of the street address.
+      street_line2:
+        allOf:
+        - $ref: '#/definitions/invoice.NullableString'
+        description: The second line of the street address.
+    type: object
+  invoice.AlternativeDisplayItem:
+    properties:
+      type:
+        description: Represent type of alternative display.
+        type: string
+      value:
+        description: Represent value of alternative display value.
+        type: string
+    type: object
+  invoice.Bank:
+    properties:
+      account_holder_name:
+        description: The name of the account holder.
+        type: string
+      alternative_displays:
+        items:
+          $ref: '#/definitions/invoice.AlternativeDisplayItem'
+        type: array
+      bank_account_number:
+        description: The bank account number.
+        type: string
+      bank_branch:
+        description: The branch of the bank.
+        type: string
+      bank_code:
+        $ref: '#/definitions/invoice.BankCode'
+      collection_type:
+        description: The collection type for the bank details.
+        type: string
+      transfer_amount:
+        description: The transfer amount.
+        type: number
+    type: object
+  invoice.BankCode:
+    enum:
+    - BCA
+    - BNI
+    - BRI
+    - MANDIRI
+    - PERMATA
+    - BSI
+    - BJB
+    - SAHABAT_SAMPOERNA
+    - CIMB
+    - VIETCAPITAL
+    - WOORI
+    - PV
+    - MSB
+    - VPB
+    - BIDV
+    - CAKE
+    - BNC
+    - HANA
+    - MUAMALAT
+    - UNKNOWN_ENUM_VALUE
+    type: string
+    x-enum-varnames:
+    - BANKCODE_BCA
+    - BANKCODE_BNI
+    - BANKCODE_BRI
+    - BANKCODE_MANDIRI
+    - BANKCODE_PERMATA
+    - BANKCODE_BSI
+    - BANKCODE_BJB
+    - BANKCODE_SAHABAT_SAMPOERNA
+    - BANKCODE_CIMB
+    - BANKCODE_VIETCAPITAL
+    - BANKCODE_WOORI
+    - BANKCODE_PV
+    - BANKCODE_MSB
+    - BANKCODE_VPB
+    - BANKCODE_BIDV
+    - BANKCODE_CAKE
+    - BANKCODE_BNC
+    - BANKCODE_HANA
+    - BANKCODE_MUAMALAT
+    - BANKCODE_XENDIT_ENUM_DEFAULT_FALLBACK
+  invoice.ChannelProperties:
+    properties:
+      cards:
+        $ref: '#/definitions/invoice.ChannelPropertiesCards'
+    type: object
+  invoice.ChannelPropertiesCards:
+    properties:
+      allowed_bins:
+        description: An array of allowed BINs (6 or 8 digits) for credit card payments.
+        items:
+          type: string
+        type: array
+      installment_configuration:
+        $ref: '#/definitions/invoice.ChannelPropertiesCardsInstallmentConfiguration'
+    type: object
+  invoice.ChannelPropertiesCardsInstallmentConfiguration:
+    properties:
+      allow_full_payment:
+        description: Indicate whether full payment (without installment) is allowed
+        type: boolean
+      allowed_terms:
+        description: An object to set what kind (from specific bank / specific tenor)
+          of cards installments will be available on a specific invoice
+        items:
+          $ref: '#/definitions/invoice.ChannelPropertiesCardsInstallmentConfigurationAllowedTermsInner'
+        type: array
+    type: object
+  invoice.ChannelPropertiesCardsInstallmentConfigurationAllowedTermsInner:
+    properties:
+      issuer:
+        description: The bank code of the installment provider / issuer
+        type: string
+      terms:
+        description: An array containing list of installment tenor available to choose
+        items:
+          type: number
+        type: array
+    type: object
+  invoice.CustomerObject:
+    properties:
+      addresses:
+        description: An array of addresses associated with the customer.
+        items:
+          $ref: '#/definitions/invoice.AddressObject'
+        type: array
+      customer_id:
+        allOf:
+        - $ref: '#/definitions/invoice.NullableString'
+        description: An additional identifier for the customer.
+      email:
+        allOf:
+        - $ref: '#/definitions/invoice.NullableString'
+        description: The customer's email address.
+      given_names:
+        allOf:
+        - $ref: '#/definitions/invoice.NullableString'
+        description: The customer's given names or first names.
+      id:
+        allOf:
+        - $ref: '#/definitions/invoice.NullableString'
+        description: The unique identifier for the customer.
+      mobile_number:
+        allOf:
+        - $ref: '#/definitions/invoice.NullableString'
+        description: The customer's mobile phone number.
+      phone_number:
+        allOf:
+        - $ref: '#/definitions/invoice.NullableString'
+        description: The customer's phone number.
+      surname:
+        allOf:
+        - $ref: '#/definitions/invoice.NullableString'
+        description: The customer's surname or last name.
+    type: object
+  invoice.DirectDebit:
+    properties:
+      direct_debit_type:
+        $ref: '#/definitions/invoice.DirectDebitType'
+    type: object
+  invoice.DirectDebitType:
+    enum:
+    - BA_BRI
+    - DC_BRI
+    - DD_BRI
+    - DD_MANDIRI
+    - BA_BPI
+    - DC_BPI
+    - DD_BPI
+    - BA_UBP
+    - DC_UBP
+    - DD_UBP
+    - BCA_KLIKPAY
+    - BA_BCA_KLIKPAY
+    - DC_BCA_KLIKPAY
+    - DD_BCA_KLIKPAY
+    - DD_BDO_EPAY
+    - DD_RCBC
+    - DD_CHINABANK
+    - BA_CHINABANK
+    - DC_CHINABANK
+    - DD_PUBLIC_FPX
+    - DD_AMBANK_FPX
+    - DD_KFH_FPX
+    - DD_AGRO_FPX
+    - DD_AFFIN_FPX
+    - DD_ALLIANCE_FPX
+    - DD_MUAMALAT_FPX
+    - DD_HLB_FPX
+    - DD_ISLAM_FPX
+    - DD_RAKYAT_FPX
+    - DD_CIMB_FPX
+    - DD_UOB_FPX
+    - DD_BOC_FPX
+    - DD_BSN_FPX
+    - DD_OCBC_FPX
+    - DD_HSBC_FPX
+    - DD_SCH_FPX
+    - DD_MAYB2U_FPX
+    - DD_RHB_FPX
+    - DD_UOB_FPX_BUSINESS
+    - DD_AGRO_FPX_BUSINESS
+    - DD_ALLIANCE_FPX_BUSINESS
+    - DD_AMBANK_FPX_BUSINESS
+    - DD_ISLAM_FPX_BUSINESS
+    - DD_MUAMALAT_FPX_BUSINESS
+    - DD_HLB_FPX_BUSINESS
+    - DD_HSBC_FPX_BUSINESS
+    - DD_RAKYAT_FPX_BUSINESS
+    - DD_KFH_FPX_BUSINESS
+    - DD_OCBC_FPX_BUSINESS
+    - DD_PUBLIC_FPX_BUSINESS
+    - DD_RHB_FPX_BUSINESS
+    - DD_SCH_FPX_BUSINESS
+    - DD_CITIBANK_FPX_BUSINESS
+    - DD_BNP_FPX_BUSINESS
+    - DD_DEUTSCHE_FPX_BUSINESS
+    - DD_MAYB2E_FPX_BUSINESS
+    - DD_CIMB_FPX_BUSINESS
+    - DD_AFFIN_FPX_BUSINESS
+    - UNKNOWN_ENUM_VALUE
+    type: string
+    x-enum-varnames:
+    - DIRECTDEBITTYPE_BA_BRI
+    - DIRECTDEBITTYPE_DC_BRI
+    - DIRECTDEBITTYPE_DD_BRI
+    - DIRECTDEBITTYPE_DD_MANDIRI
+    - DIRECTDEBITTYPE_BA_BPI
+    - DIRECTDEBITTYPE_DC_BPI
+    - DIRECTDEBITTYPE_DD_BPI
+    - DIRECTDEBITTYPE_BA_UBP
+    - DIRECTDEBITTYPE_DC_UBP
+    - DIRECTDEBITTYPE_DD_UBP
+    - DIRECTDEBITTYPE_BCA_KLIKPAY
+    - DIRECTDEBITTYPE_BA_BCA_KLIKPAY
+    - DIRECTDEBITTYPE_DC_BCA_KLIKPAY
+    - DIRECTDEBITTYPE_DD_BCA_KLIKPAY
+    - DIRECTDEBITTYPE_DD_BDO_EPAY
+    - DIRECTDEBITTYPE_DD_RCBC
+    - DIRECTDEBITTYPE_DD_CHINABANK
+    - DIRECTDEBITTYPE_BA_CHINABANK
+    - DIRECTDEBITTYPE_DC_CHINABANK
+    - DIRECTDEBITTYPE_DD_PUBLIC_FPX
+    - DIRECTDEBITTYPE_DD_AMBANK_FPX
+    - DIRECTDEBITTYPE_DD_KFH_FPX
+    - DIRECTDEBITTYPE_DD_AGRO_FPX
+    - DIRECTDEBITTYPE_DD_AFFIN_FPX
+    - DIRECTDEBITTYPE_DD_ALLIANCE_FPX
+    - DIRECTDEBITTYPE_DD_MUAMALAT_FPX
+    - DIRECTDEBITTYPE_DD_HLB_FPX
+    - DIRECTDEBITTYPE_DD_ISLAM_FPX
+    - DIRECTDEBITTYPE_DD_RAKYAT_FPX
+    - DIRECTDEBITTYPE_DD_CIMB_FPX
+    - DIRECTDEBITTYPE_DD_UOB_FPX
+    - DIRECTDEBITTYPE_DD_BOC_FPX
+    - DIRECTDEBITTYPE_DD_BSN_FPX
+    - DIRECTDEBITTYPE_DD_OCBC_FPX
+    - DIRECTDEBITTYPE_DD_HSBC_FPX
+    - DIRECTDEBITTYPE_DD_SCH_FPX
+    - DIRECTDEBITTYPE_DD_MAYB2_U_FPX
+    - DIRECTDEBITTYPE_DD_RHB_FPX
+    - DIRECTDEBITTYPE_DD_UOB_FPX_BUSINESS
+    - DIRECTDEBITTYPE_DD_AGRO_FPX_BUSINESS
+    - DIRECTDEBITTYPE_DD_ALLIANCE_FPX_BUSINESS
+    - DIRECTDEBITTYPE_DD_AMBANK_FPX_BUSINESS
+    - DIRECTDEBITTYPE_DD_ISLAM_FPX_BUSINESS
+    - DIRECTDEBITTYPE_DD_MUAMALAT_FPX_BUSINESS
+    - DIRECTDEBITTYPE_DD_HLB_FPX_BUSINESS
+    - DIRECTDEBITTYPE_DD_HSBC_FPX_BUSINESS
+    - DIRECTDEBITTYPE_DD_RAKYAT_FPX_BUSINESS
+    - DIRECTDEBITTYPE_DD_KFH_FPX_BUSINESS
+    - DIRECTDEBITTYPE_DD_OCBC_FPX_BUSINESS
+    - DIRECTDEBITTYPE_DD_PUBLIC_FPX_BUSINESS
+    - DIRECTDEBITTYPE_DD_RHB_FPX_BUSINESS
+    - DIRECTDEBITTYPE_DD_SCH_FPX_BUSINESS
+    - DIRECTDEBITTYPE_DD_CITIBANK_FPX_BUSINESS
+    - DIRECTDEBITTYPE_DD_BNP_FPX_BUSINESS
+    - DIRECTDEBITTYPE_DD_DEUTSCHE_FPX_BUSINESS
+    - DIRECTDEBITTYPE_DD_MAYB2_E_FPX_BUSINESS
+    - DIRECTDEBITTYPE_DD_CIMB_FPX_BUSINESS
+    - DIRECTDEBITTYPE_DD_AFFIN_FPX_BUSINESS
+    - DIRECTDEBITTYPE_XENDIT_ENUM_DEFAULT_FALLBACK
+  invoice.Ewallet:
+    properties:
+      ewallet_type:
+        $ref: '#/definitions/invoice.EwalletType'
+    type: object
+  invoice.EwalletType:
+    enum:
+    - OVO
+    - GOPAY
+    - DANA
+    - LINKAJA
+    - PAYMAYA
+    - SHOPEEPAY
+    - GCASH
+    - GRABPAY
+    - ASTRAPAY
+    - NEXCASH
+    - JENIUSPAY
+    - MOMO
+    - ZALOPAY
+    - VIETTELPAY
+    - VNPTWALLET
+    - APPOTA
+    - LINEPAY
+    - TRUEMONEY
+    - WECHATPAY
+    - TOUCHNGO
+    - UNKNOWN_ENUM_VALUE
+    type: string
+    x-enum-varnames:
+    - EWALLETTYPE_OVO
+    - EWALLETTYPE_GOPAY
+    - EWALLETTYPE_DANA
+    - EWALLETTYPE_LINKAJA
+    - EWALLETTYPE_PAYMAYA
+    - EWALLETTYPE_SHOPEEPAY
+    - EWALLETTYPE_GCASH
+    - EWALLETTYPE_GRABPAY
+    - EWALLETTYPE_ASTRAPAY
+    - EWALLETTYPE_NEXCASH
+    - EWALLETTYPE_JENIUSPAY
+    - EWALLETTYPE_MOMO
+    - EWALLETTYPE_ZALOPAY
+    - EWALLETTYPE_VIETTELPAY
+    - EWALLETTYPE_VNPTWALLET
+    - EWALLETTYPE_APPOTA
+    - EWALLETTYPE_LINEPAY
+    - EWALLETTYPE_TRUEMONEY
+    - EWALLETTYPE_WECHATPAY
+    - EWALLETTYPE_TOUCHNGO
+    - EWALLETTYPE_XENDIT_ENUM_DEFAULT_FALLBACK
+  invoice.Invoice:
+    properties:
+      amount:
+        description: The total amount of the invoice.
+        type: number
+      available_banks:
+        description: An array of available banks for payment.
+        items:
+          $ref: '#/definitions/invoice.Bank'
+        type: array
+      available_direct_debits:
+        description: An array of available direct debit options for payment.
+        items:
+          $ref: '#/definitions/invoice.DirectDebit'
+        type: array
+      available_ewallets:
+        description: An array of available e-wallets for payment.
+        items:
+          $ref: '#/definitions/invoice.Ewallet'
+        type: array
+      available_paylaters:
+        description: An array of available pay-later options for payment.
+        items:
+          $ref: '#/definitions/invoice.Paylater'
+        type: array
+      available_qr_codes:
+        description: An array of available QR codes for payment.
+        items:
+          $ref: '#/definitions/invoice.QrCode'
+        type: array
+      available_retail_outlets:
+        description: An array of available retail outlets for payment.
+        items:
+          $ref: '#/definitions/invoice.RetailOutlet'
+        type: array
+      channel_properties:
+        $ref: '#/definitions/invoice.ChannelProperties'
+      created:
+        description: Representing a date and time in ISO 8601 format.
+        type: string
+      currency:
+        $ref: '#/definitions/invoice.InvoiceCurrency'
+      customer:
+        $ref: '#/definitions/invoice.CustomerObject'
+      customer_notification_preference:
+        $ref: '#/definitions/invoice.NotificationPreference'
+      description:
+        description: A description of the invoice.
+        type: string
+      expiry_date:
+        description: Representing a date and time in ISO 8601 format.
+        type: string
+      external_id:
+        description: The external identifier for the invoice.
+        type: string
+      failure_redirect_url:
+        description: The URL to redirect to on payment failure.
+        type: string
+      fees:
+        description: An array of fees associated with the invoice.
+        items:
+          $ref: '#/definitions/invoice.InvoiceFee'
+        type: array
+      fixed_va:
+        description: Indicates whether the virtual account is fixed.
+        type: boolean
+      id:
+        description: The unique identifier for the invoice.
+        type: string
+      invoice_url:
+        description: The URL to view the invoice.
+        type: string
+      items:
+        description: An array of items included in the invoice.
+        items:
+          $ref: '#/definitions/invoice.InvoiceItem'
+        type: array
+      locale:
+        description: The locale or language used for the invoice.
+        type: string
+      merchant_name:
+        description: The name of the merchant.
+        type: string
+      merchant_profile_picture_url:
+        description: The URL of the merchant's profile picture.
+        type: string
+      metadata:
+        additionalProperties: true
+        description: A free-format JSON for additional information that you may use.
+          Object can be up to 50 keys, with key names up to 40 characters long and
+          values up to 500 characters long.
+        type: object
+      payer_email:
+        description: The email address of the payer.
+        type: string
+      payment_method:
+        $ref: '#/definitions/invoice.InvoicePaymentMethod'
+      reminder_date:
+        description: Representing a date and time in ISO 8601 format.
+        type: string
+      should_authenticate_credit_card:
+        description: Indicates whether credit card authentication is required.
+        type: boolean
+      should_exclude_credit_card:
+        description: Indicates whether credit card payments should be excluded.
+        type: boolean
+      should_send_email:
+        description: Indicates whether email notifications should be sent.
+        type: boolean
+      status:
+        $ref: '#/definitions/invoice.InvoiceStatus'
+      success_redirect_url:
+        description: The URL to redirect to on successful payment.
+        type: string
+      updated:
+        description: Representing a date and time in ISO 8601 format.
+        type: string
+      user_id:
+        description: The user ID associated with the invoice.
+        type: string
+    type: object
+  invoice.InvoiceCallback:
+    properties:
+      amount:
+        description: Nominal amount for the invoice
+        type: number
+      bank_code:
+        description: The bank code for the bank details.
+        type: string
+      created:
+        description: The date and time when the invoice was created.
+        type: string
+      credit_card_charge_id:
+        description: The ID associated with a credit card charge (if applicable).
+        type: string
+      currency:
+        description: The currency of the invoice.
+        type: string
+      description:
+        description: Description for the invoice
+        type: string
+      ewallet_type:
+        description: The type of eWallet.
+        type: string
+      external_id:
+        description: ID of your choice (typically the unique identifier of an invoice
+          in your system)
+        type: string
+      failure_redirect_url:
+        description: The URL to redirect to on payment failure.
+        type: string
+      fees:
+        description: An array of fees associated with the invoice.
+        items:
+          $ref: '#/definitions/invoice.InvoiceFee'
+        type: array
+      id:
+        description: An invoice ID generated by Xendit
+        type: string
+      items:
+        items:
+          $ref: '#/definitions/invoice.InvoiceCallbackItem'
+        type: array
+      merchant_name:
+        description: The name of company or website
+        type: string
+      on_demand_link:
+        description: The on-demand link.
+        type: string
+      paid_amount:
+        description: Total amount paid for the invoice
+        type: number
+      paid_at:
+        description: The date and time when the invoice was paid.
+        type: string
+      payer_email:
+        description: Email of the payer
+        type: string
+      payment_channel:
+        description: The payment channel.
+        type: string
+      payment_destination:
+        description: The payment destination.
+        type: string
+      payment_details:
+        $ref: '#/definitions/invoice.PaymentDetails'
+      payment_id:
+        description: The ID of the payment.
+        type: string
+      payment_method:
+        description: The payment method used for the invoice.
+        type: string
+      recurring_payment_id:
+        description: The ID of the recurring payment.
+        type: string
+      should_authenticate_credit_card:
+        description: Indicates whether credit card authentication is required.
+        type: boolean
+      status:
+        description: The status of the invoice.
+        type: string
+      success_redirect_url:
+        description: The URL to redirect to on successful payment.
+        type: string
+      updated:
+        description: The date and time when the invoice was last updated.
+        type: string
+      user_id:
+        description: Xendit Business ID
+        type: string
+    type: object
+  invoice.InvoiceCallbackItem:
+    properties:
+      category:
+        description: The category of the item.
+        type: string
+      name:
+        description: The name of the item.
+        type: string
+      price:
+        description: The price of the item.
+        type: number
+      quantity:
+        description: The quantity of the item. Must be greater than or equal to 0.
+        type: number
+      url:
+        description: The URL associated with the item.
+        type: string
+    type: object
+  invoice.InvoiceCurrency:
+    enum:
+    - IDR
+    - USD
+    - THB
+    - VND
+    - PHP
+    - MYR
+    - UNKNOWN_ENUM_VALUE
+    type: string
+    x-enum-varnames:
+    - INVOICECURRENCY_IDR
+    - INVOICECURRENCY_USD
+    - INVOICECURRENCY_THB
+    - INVOICECURRENCY_VND
+    - INVOICECURRENCY_PHP
+    - INVOICECURRENCY_MYR
+    - INVOICECURRENCY_XENDIT_ENUM_DEFAULT_FALLBACK
+  invoice.InvoiceFee:
+    properties:
+      type:
+        description: The type of fee.
+        type: string
+      value:
+        description: The value or amount of the fee.
+        type: number
+    type: object
+  invoice.InvoiceItem:
+    properties:
+      category:
+        description: The category of the item.
+        type: string
+      name:
+        description: The name of the item.
+        type: string
+      price:
+        description: The price of the item.
+        type: number
+      quantity:
+        description: The quantity of the item. Must be greater than or equal to 0.
+        type: number
+      reference_id:
+        description: The reference ID of the item.
+        type: string
+      url:
+        description: The URL associated with the item.
+        type: string
+    type: object
+  invoice.InvoicePaymentMethod:
+    enum:
+    - POOL
+    - CALLBACK_VIRTUAL_ACCOUNT
+    - CREDIT_CARD
+    - RETAIL_OUTLET
+    - QR_CODE
+    - QRIS
+    - EWALLET
+    - DIRECT_DEBIT
+    - BANK_TRANSFER
+    - PAYLATER
+    - CRYPTOCURRENCY
+    - UNKNOWN_ENUM_VALUE
+    type: string
+    x-enum-varnames:
+    - INVOICEPAYMENTMETHOD_POOL
+    - INVOICEPAYMENTMETHOD_CALLBACK_VIRTUAL_ACCOUNT
+    - INVOICEPAYMENTMETHOD_CREDIT_CARD
+    - INVOICEPAYMENTMETHOD_RETAIL_OUTLET
+    - INVOICEPAYMENTMETHOD_QR_CODE
+    - INVOICEPAYMENTMETHOD_QRIS
+    - INVOICEPAYMENTMETHOD_EWALLET
+    - INVOICEPAYMENTMETHOD_DIRECT_DEBIT
+    - INVOICEPAYMENTMETHOD_BANK_TRANSFER
+    - INVOICEPAYMENTMETHOD_PAYLATER
+    - INVOICEPAYMENTMETHOD_CRYPTOCURRENCY
+    - INVOICEPAYMENTMETHOD_XENDIT_ENUM_DEFAULT_FALLBACK
+  invoice.InvoiceStatus:
+    enum:
+    - PENDING
+    - PAID
+    - SETTLED
+    - EXPIRED
+    - UNKNOWN_ENUM_VALUE
+    type: string
+    x-enum-varnames:
+    - INVOICESTATUS_PENDING
+    - INVOICESTATUS_PAID
+    - INVOICESTATUS_SETTLED
+    - INVOICESTATUS_EXPIRED
+    - INVOICESTATUS_XENDIT_ENUM_DEFAULT_FALLBACK
+  invoice.NotificationChannel:
+    enum:
+    - email
+    - sms
+    - whatsapp
+    - viber
+    - UNKNOWN_ENUM_VALUE
+    type: string
+    x-enum-varnames:
+    - NOTIFICATIONCHANNEL_EMAIL
+    - NOTIFICATIONCHANNEL_SMS
+    - NOTIFICATIONCHANNEL_WHATSAPP
+    - NOTIFICATIONCHANNEL_VIBER
+    - NOTIFICATIONCHANNEL_XENDIT_ENUM_DEFAULT_FALLBACK
+  invoice.NotificationPreference:
+    properties:
+      invoice_created:
+        description: Notification channels for when an invoice is created.
+        items:
+          $ref: '#/definitions/invoice.NotificationChannel'
+        type: array
+      invoice_paid:
+        description: Notification channels for when an invoice is paid.
+        items:
+          $ref: '#/definitions/invoice.NotificationChannel'
+        type: array
+      invoice_reminder:
+        description: Notification channels for invoice reminders.
+        items:
+          $ref: '#/definitions/invoice.NotificationChannel'
+        type: array
+    type: object
+  invoice.NullableString:
+    type: object
+  invoice.Paylater:
+    properties:
+      paylater_type:
+        $ref: '#/definitions/invoice.PaylaterType'
+      should_exclude:
+        description: Indicates whether this paylater option should be excluded.
+        type: boolean
+    type: object
+  invoice.PaylaterType:
+    enum:
+    - KREDIVO
+    - AKULAKU
+    - UANGME
+    - BILLEASE
+    - CASHALO
+    - ATOME
+    - UNKNOWN_ENUM_VALUE
+    type: string
+    x-enum-varnames:
+    - PAYLATERTYPE_KREDIVO
+    - PAYLATERTYPE_AKULAKU
+    - PAYLATERTYPE_UANGME
+    - PAYLATERTYPE_BILLEASE
+    - PAYLATERTYPE_CASHALO
+    - PAYLATERTYPE_ATOME
+    - PAYLATERTYPE_XENDIT_ENUM_DEFAULT_FALLBACK
+  invoice.PaymentDetails:
+    properties:
+      receipt_id:
+        description: The unique identifier or reference ID associated with the payment
+          receipt.
+        type: string
+      source:
+        description: The source or method of payment.
+        type: string
+    type: object
+  invoice.QrCode:
+    properties:
+      qr_code_type:
+        $ref: '#/definitions/invoice.QrCodeType'
+    type: object
+  invoice.QrCodeType:
+    enum:
+    - QRIS
+    - PROMPTPAY
+    - QRPH
+    - UNKNOWN_ENUM_VALUE
+    type: string
+    x-enum-varnames:
+    - QRCODETYPE_QRIS
+    - QRCODETYPE_PROMPTPAY
+    - QRCODETYPE_QRPH
+    - QRCODETYPE_XENDIT_ENUM_DEFAULT_FALLBACK
+  invoice.RetailOutlet:
+    properties:
+      merchant_name:
+        description: The name of the merchant.
+        type: string
+      payment_code:
+        description: The payment code.
+        type: string
+      retail_outlet_name:
+        $ref: '#/definitions/invoice.RetailOutletName'
+      transfer_amount:
+        description: The transfer amount.
+        type: number
+    type: object
+  invoice.RetailOutletName:
+    enum:
+    - ALFAMART
+    - INDOMARET
+    - 7ELEVEN
+    - CEBUANA
+    - DP_ECPAY_LOAN
+    - DP_MLHUILLIER
+    - DP_PALAWAN
+    - DP_ECPAY_SCHOOL
+    - LBC
+    - UNKNOWN_ENUM_VALUE
+    type: string
+    x-enum-varnames:
+    - RETAILOUTLETNAME_ALFAMART
+    - RETAILOUTLETNAME_INDOMARET
+    - RETAILOUTLETNAME__7_ELEVEN
+    - RETAILOUTLETNAME_CEBUANA
+    - RETAILOUTLETNAME_DP_ECPAY_LOAN
+    - RETAILOUTLETNAME_DP_MLHUILLIER
+    - RETAILOUTLETNAME_DP_PALAWAN
+    - RETAILOUTLETNAME_DP_ECPAY_SCHOOL
+    - RETAILOUTLETNAME_LBC
+    - RETAILOUTLETNAME_XENDIT_ENUM_DEFAULT_FALLBACK
 info:
   contact: {}
   description: API boilerplate with Go + Fiber.
   title: Boilerplate Go Fiber API
   version: 0.1.0
 paths:
+  /auth/forgot-password:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Forgot password payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/internal_transport_http_auth.ForgotPasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response'
+      summary: Request password reset
+      tags:
+      - Auth
   /auth/login:
     post:
       consumes:
@@ -298,6 +1275,35 @@ paths:
       summary: Refresh access token
       tags:
       - Auth
+  /auth/reset-password:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Reset password payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/internal_transport_http_auth.ResetPasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response'
+      summary: Reset password
+      tags:
+      - Auth
   /health:
     get:
       produces:
@@ -353,6 +1359,173 @@ paths:
       summary: Readiness check
       tags:
       - Health
+  /payment/balance:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_transport_http_payment.BalanceResponse'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response'
+      summary: Check Balance
+      tags:
+      - Payment
+  /payment/invoice:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Idempotency key
+        in: header
+        name: Idempotency-Key
+        type: string
+      - description: Create invoice payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/internal_transport_http_payment.CreateInvoiceRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/invoice.Invoice'
+              type: object
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/invoice.Invoice'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response'
+      summary: Create Invoice
+      tags:
+      - Payment
+  /payment/invoice/{id}:
+    get:
+      parameters:
+      - description: Invoice ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/invoice.Invoice'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response'
+      summary: Get Invoice By Id
+      tags:
+      - Payment
+  /payment/invoice/{id}/expire:
+    post:
+      parameters:
+      - description: Invoice ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/invoice.Invoice'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response'
+      summary: Expire Invoice
+      tags:
+      - Payment
+  /payment/webhook/xendit/invoice:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Invoice callback payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/invoice.InvoiceCallback'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response'
+      summary: Xendit invoice webhook
+      tags:
+      - Payment
   /rbac/permissions:
     get:
       produces:
@@ -748,6 +1921,23 @@ paths:
       - RBAC
   /users:
     get:
+      parameters:
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Items per page
+        in: query
+        name: per_page
+        type: integer
+      - description: Search by email or id
+        in: query
+        name: search
+        type: string
+      - description: Filter by active status
+        in: query
+        name: is_active
+        type: boolean
       produces:
       - application/json
       responses:
@@ -758,10 +1948,12 @@ paths:
             - $ref: '#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response'
             - properties:
                 data:
-                  items:
-                    $ref: '#/definitions/internal_transport_http_user.UserResponse'
-                  type: array
+                  $ref: '#/definitions/internal_transport_http_user.UserListResponse'
               type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response'
         "401":
           description: Unauthorized
           schema:

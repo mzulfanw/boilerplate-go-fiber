@@ -11,6 +11,51 @@
     },
     "basePath": "/",
     "paths": {
+        "/auth/forgot-password": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Request password reset",
+                "parameters": [
+                    {
+                        "description": "Forgot password payload",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_transport_http_auth.ForgotPasswordRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/auth/login": {
             "post": {
                 "consumes": [
@@ -176,6 +221,51 @@
                 }
             }
         },
+        "/auth/reset-password": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Reset password",
+                "parameters": [
+                    {
+                        "description": "Reset password payload",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_transport_http_auth.ResetPasswordRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/health": {
             "get": {
                 "produces": [
@@ -268,6 +358,285 @@
                     },
                     "503": {
                         "description": "Service Unavailable",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/payment/balance": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Payment"
+                ],
+                "summary": "Check Balance",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/internal_transport_http_payment.BalanceResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/payment/invoice": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Payment"
+                ],
+                "summary": "Create Invoice",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Idempotency key",
+                        "name": "Idempotency-Key",
+                        "in": "header"
+                    },
+                    {
+                        "description": "Create invoice payload",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_transport_http_payment.CreateInvoiceRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/invoice.Invoice"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/invoice.Invoice"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/payment/invoice/{id}": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Payment"
+                ],
+                "summary": "Get Invoice By Id",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Invoice ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/invoice.Invoice"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/payment/invoice/{id}/expire": {
+            "post": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Payment"
+                ],
+                "summary": "Expire Invoice",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Invoice ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/invoice.Invoice"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/payment/webhook/xendit/invoice": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Payment"
+                ],
+                "summary": "Xendit invoice webhook",
+                "parameters": [
+                    {
+                        "description": "Invoice callback payload",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/invoice.InvoiceCallback"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response"
                         }
@@ -957,6 +1326,32 @@
                     "Users"
                 ],
                 "summary": "List users",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Page number",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Items per page",
+                        "name": "per_page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Search by email or id",
+                        "name": "search",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Filter by active status",
+                        "name": "is_active",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -969,14 +1364,17 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "type": "array",
-                                            "items": {
-                                                "$ref": "#/definitions/internal_transport_http_user.UserResponse"
-                                            }
+                                            "$ref": "#/definitions/internal_transport_http_user.UserListResponse"
                                         }
                                     }
                                 }
                             ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response"
                         }
                     },
                     "401": {
@@ -1358,6 +1756,29 @@
                 }
             }
         },
+        "github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.PageMeta": {
+            "type": "object",
+            "properties": {
+                "has_next": {
+                    "type": "boolean"
+                },
+                "has_prev": {
+                    "type": "boolean"
+                },
+                "page": {
+                    "type": "integer"
+                },
+                "per_page": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "integer"
+                },
+                "total_pages": {
+                    "type": "integer"
+                }
+            }
+        },
         "github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.ReadinessStatus": {
             "type": "object",
             "properties": {
@@ -1416,8 +1837,23 @@
                 }
             }
         },
+        "internal_transport_http_auth.ForgotPasswordRequest": {
+            "type": "object",
+            "required": [
+                "email"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string"
+                }
+            }
+        },
         "internal_transport_http_auth.LoginRequest": {
             "type": "object",
+            "required": [
+                "email",
+                "password"
+            ],
             "properties": {
                 "email": {
                     "type": "string"
@@ -1429,6 +1865,9 @@
         },
         "internal_transport_http_auth.LogoutRequest": {
             "type": "object",
+            "required": [
+                "refresh_token"
+            ],
             "properties": {
                 "refresh_token": {
                     "type": "string"
@@ -1437,8 +1876,27 @@
         },
         "internal_transport_http_auth.RefreshRequest": {
             "type": "object",
+            "required": [
+                "refresh_token"
+            ],
             "properties": {
                 "refresh_token": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_transport_http_auth.ResetPasswordRequest": {
+            "type": "object",
+            "required": [
+                "password",
+                "token"
+            ],
+            "properties": {
+                "password": {
+                    "type": "string",
+                    "minLength": 8
+                },
+                "token": {
                     "type": "string"
                 }
             }
@@ -1460,8 +1918,141 @@
                 }
             }
         },
+        "internal_transport_http_payment.BalanceResponse": {
+            "type": "object",
+            "properties": {
+                "balance": {
+                    "type": "number"
+                }
+            }
+        },
+        "internal_transport_http_payment.CreateInvoiceRequest": {
+            "type": "object",
+            "required": [
+                "amount",
+                "external_id"
+            ],
+            "properties": {
+                "amount": {
+                    "type": "number"
+                },
+                "callback_virtual_account_id": {
+                    "type": "string"
+                },
+                "currency": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "external_id": {
+                    "type": "string"
+                },
+                "failure_redirect_url": {
+                    "type": "string"
+                },
+                "fees": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/internal_transport_http_payment.InvoiceFeeRequest"
+                    }
+                },
+                "invoice_duration": {
+                    "type": "integer"
+                },
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/internal_transport_http_payment.InvoiceItemRequest"
+                    }
+                },
+                "locale": {
+                    "type": "string"
+                },
+                "metadata": {
+                    "type": "object",
+                    "additionalProperties": {}
+                },
+                "mid_label": {
+                    "type": "string"
+                },
+                "payer_email": {
+                    "type": "string"
+                },
+                "payment_methods": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "reminder_time": {
+                    "type": "integer"
+                },
+                "reminder_time_unit": {
+                    "type": "string"
+                },
+                "should_authenticate_credit_card": {
+                    "type": "boolean"
+                },
+                "should_send_email": {
+                    "type": "boolean"
+                },
+                "success_redirect_url": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_transport_http_payment.InvoiceFeeRequest": {
+            "type": "object",
+            "required": [
+                "type",
+                "value"
+            ],
+            "properties": {
+                "type": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "number",
+                    "minimum": 0
+                }
+            }
+        },
+        "internal_transport_http_payment.InvoiceItemRequest": {
+            "type": "object",
+            "required": [
+                "name",
+                "price",
+                "quantity"
+            ],
+            "properties": {
+                "category": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "price": {
+                    "type": "number",
+                    "minimum": 0
+                },
+                "quantity": {
+                    "type": "number",
+                    "minimum": 0
+                },
+                "reference_id": {
+                    "type": "string"
+                },
+                "url": {
+                    "type": "string"
+                }
+            }
+        },
         "internal_transport_http_rbac.PermissionRequest": {
             "type": "object",
+            "required": [
+                "name"
+            ],
             "properties": {
                 "description": {
                     "type": "string"
@@ -1515,6 +2106,9 @@
         },
         "internal_transport_http_rbac.RoleRequest": {
             "type": "object",
+            "required": [
+                "name"
+            ],
             "properties": {
                 "description": {
                     "type": "string"
@@ -1543,6 +2137,10 @@
         },
         "internal_transport_http_user.CreateUserRequest": {
             "type": "object",
+            "required": [
+                "email",
+                "password"
+            ],
             "properties": {
                 "email": {
                     "type": "string"
@@ -1592,6 +2190,20 @@
                 }
             }
         },
+        "internal_transport_http_user.UserListResponse": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/internal_transport_http_user.UserResponse"
+                    }
+                },
+                "meta": {
+                    "$ref": "#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.PageMeta"
+                }
+            }
+        },
         "internal_transport_http_user.UserResponse": {
             "type": "object",
             "properties": {
@@ -1636,6 +2248,1057 @@
                     "type": "string"
                 }
             }
+        },
+        "invoice.AddressObject": {
+            "type": "object",
+            "properties": {
+                "city": {
+                    "description": "The city or locality within the address.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/invoice.NullableString"
+                        }
+                    ]
+                },
+                "country": {
+                    "description": "The country where the address is located.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/invoice.NullableString"
+                        }
+                    ]
+                },
+                "postal_code": {
+                    "description": "The postal code or ZIP code for the address.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/invoice.NullableString"
+                        }
+                    ]
+                },
+                "province": {
+                    "description": "The province or region within the country.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/invoice.NullableString"
+                        }
+                    ]
+                },
+                "state": {
+                    "description": "The state or administrative division within the country.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/invoice.NullableString"
+                        }
+                    ]
+                },
+                "street_line1": {
+                    "description": "The first line of the street address.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/invoice.NullableString"
+                        }
+                    ]
+                },
+                "street_line2": {
+                    "description": "The second line of the street address.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/invoice.NullableString"
+                        }
+                    ]
+                }
+            }
+        },
+        "invoice.AlternativeDisplayItem": {
+            "type": "object",
+            "properties": {
+                "type": {
+                    "description": "Represent type of alternative display.",
+                    "type": "string"
+                },
+                "value": {
+                    "description": "Represent value of alternative display value.",
+                    "type": "string"
+                }
+            }
+        },
+        "invoice.Bank": {
+            "type": "object",
+            "properties": {
+                "account_holder_name": {
+                    "description": "The name of the account holder.",
+                    "type": "string"
+                },
+                "alternative_displays": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/invoice.AlternativeDisplayItem"
+                    }
+                },
+                "bank_account_number": {
+                    "description": "The bank account number.",
+                    "type": "string"
+                },
+                "bank_branch": {
+                    "description": "The branch of the bank.",
+                    "type": "string"
+                },
+                "bank_code": {
+                    "$ref": "#/definitions/invoice.BankCode"
+                },
+                "collection_type": {
+                    "description": "The collection type for the bank details.",
+                    "type": "string"
+                },
+                "transfer_amount": {
+                    "description": "The transfer amount.",
+                    "type": "number"
+                }
+            }
+        },
+        "invoice.BankCode": {
+            "type": "string",
+            "enum": [
+                "BCA",
+                "BNI",
+                "BRI",
+                "MANDIRI",
+                "PERMATA",
+                "BSI",
+                "BJB",
+                "SAHABAT_SAMPOERNA",
+                "CIMB",
+                "VIETCAPITAL",
+                "WOORI",
+                "PV",
+                "MSB",
+                "VPB",
+                "BIDV",
+                "CAKE",
+                "BNC",
+                "HANA",
+                "MUAMALAT",
+                "UNKNOWN_ENUM_VALUE"
+            ],
+            "x-enum-varnames": [
+                "BANKCODE_BCA",
+                "BANKCODE_BNI",
+                "BANKCODE_BRI",
+                "BANKCODE_MANDIRI",
+                "BANKCODE_PERMATA",
+                "BANKCODE_BSI",
+                "BANKCODE_BJB",
+                "BANKCODE_SAHABAT_SAMPOERNA",
+                "BANKCODE_CIMB",
+                "BANKCODE_VIETCAPITAL",
+                "BANKCODE_WOORI",
+                "BANKCODE_PV",
+                "BANKCODE_MSB",
+                "BANKCODE_VPB",
+                "BANKCODE_BIDV",
+                "BANKCODE_CAKE",
+                "BANKCODE_BNC",
+                "BANKCODE_HANA",
+                "BANKCODE_MUAMALAT",
+                "BANKCODE_XENDIT_ENUM_DEFAULT_FALLBACK"
+            ]
+        },
+        "invoice.ChannelProperties": {
+            "type": "object",
+            "properties": {
+                "cards": {
+                    "$ref": "#/definitions/invoice.ChannelPropertiesCards"
+                }
+            }
+        },
+        "invoice.ChannelPropertiesCards": {
+            "type": "object",
+            "properties": {
+                "allowed_bins": {
+                    "description": "An array of allowed BINs (6 or 8 digits) for credit card payments.",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "installment_configuration": {
+                    "$ref": "#/definitions/invoice.ChannelPropertiesCardsInstallmentConfiguration"
+                }
+            }
+        },
+        "invoice.ChannelPropertiesCardsInstallmentConfiguration": {
+            "type": "object",
+            "properties": {
+                "allow_full_payment": {
+                    "description": "Indicate whether full payment (without installment) is allowed",
+                    "type": "boolean"
+                },
+                "allowed_terms": {
+                    "description": "An object to set what kind (from specific bank / specific tenor) of cards installments will be available on a specific invoice",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/invoice.ChannelPropertiesCardsInstallmentConfigurationAllowedTermsInner"
+                    }
+                }
+            }
+        },
+        "invoice.ChannelPropertiesCardsInstallmentConfigurationAllowedTermsInner": {
+            "type": "object",
+            "properties": {
+                "issuer": {
+                    "description": "The bank code of the installment provider / issuer",
+                    "type": "string"
+                },
+                "terms": {
+                    "description": "An array containing list of installment tenor available to choose",
+                    "type": "array",
+                    "items": {
+                        "type": "number"
+                    }
+                }
+            }
+        },
+        "invoice.CustomerObject": {
+            "type": "object",
+            "properties": {
+                "addresses": {
+                    "description": "An array of addresses associated with the customer.",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/invoice.AddressObject"
+                    }
+                },
+                "customer_id": {
+                    "description": "An additional identifier for the customer.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/invoice.NullableString"
+                        }
+                    ]
+                },
+                "email": {
+                    "description": "The customer's email address.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/invoice.NullableString"
+                        }
+                    ]
+                },
+                "given_names": {
+                    "description": "The customer's given names or first names.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/invoice.NullableString"
+                        }
+                    ]
+                },
+                "id": {
+                    "description": "The unique identifier for the customer.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/invoice.NullableString"
+                        }
+                    ]
+                },
+                "mobile_number": {
+                    "description": "The customer's mobile phone number.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/invoice.NullableString"
+                        }
+                    ]
+                },
+                "phone_number": {
+                    "description": "The customer's phone number.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/invoice.NullableString"
+                        }
+                    ]
+                },
+                "surname": {
+                    "description": "The customer's surname or last name.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/invoice.NullableString"
+                        }
+                    ]
+                }
+            }
+        },
+        "invoice.DirectDebit": {
+            "type": "object",
+            "properties": {
+                "direct_debit_type": {
+                    "$ref": "#/definitions/invoice.DirectDebitType"
+                }
+            }
+        },
+        "invoice.DirectDebitType": {
+            "type": "string",
+            "enum": [
+                "BA_BRI",
+                "DC_BRI",
+                "DD_BRI",
+                "DD_MANDIRI",
+                "BA_BPI",
+                "DC_BPI",
+                "DD_BPI",
+                "BA_UBP",
+                "DC_UBP",
+                "DD_UBP",
+                "BCA_KLIKPAY",
+                "BA_BCA_KLIKPAY",
+                "DC_BCA_KLIKPAY",
+                "DD_BCA_KLIKPAY",
+                "DD_BDO_EPAY",
+                "DD_RCBC",
+                "DD_CHINABANK",
+                "BA_CHINABANK",
+                "DC_CHINABANK",
+                "DD_PUBLIC_FPX",
+                "DD_AMBANK_FPX",
+                "DD_KFH_FPX",
+                "DD_AGRO_FPX",
+                "DD_AFFIN_FPX",
+                "DD_ALLIANCE_FPX",
+                "DD_MUAMALAT_FPX",
+                "DD_HLB_FPX",
+                "DD_ISLAM_FPX",
+                "DD_RAKYAT_FPX",
+                "DD_CIMB_FPX",
+                "DD_UOB_FPX",
+                "DD_BOC_FPX",
+                "DD_BSN_FPX",
+                "DD_OCBC_FPX",
+                "DD_HSBC_FPX",
+                "DD_SCH_FPX",
+                "DD_MAYB2U_FPX",
+                "DD_RHB_FPX",
+                "DD_UOB_FPX_BUSINESS",
+                "DD_AGRO_FPX_BUSINESS",
+                "DD_ALLIANCE_FPX_BUSINESS",
+                "DD_AMBANK_FPX_BUSINESS",
+                "DD_ISLAM_FPX_BUSINESS",
+                "DD_MUAMALAT_FPX_BUSINESS",
+                "DD_HLB_FPX_BUSINESS",
+                "DD_HSBC_FPX_BUSINESS",
+                "DD_RAKYAT_FPX_BUSINESS",
+                "DD_KFH_FPX_BUSINESS",
+                "DD_OCBC_FPX_BUSINESS",
+                "DD_PUBLIC_FPX_BUSINESS",
+                "DD_RHB_FPX_BUSINESS",
+                "DD_SCH_FPX_BUSINESS",
+                "DD_CITIBANK_FPX_BUSINESS",
+                "DD_BNP_FPX_BUSINESS",
+                "DD_DEUTSCHE_FPX_BUSINESS",
+                "DD_MAYB2E_FPX_BUSINESS",
+                "DD_CIMB_FPX_BUSINESS",
+                "DD_AFFIN_FPX_BUSINESS",
+                "UNKNOWN_ENUM_VALUE"
+            ],
+            "x-enum-varnames": [
+                "DIRECTDEBITTYPE_BA_BRI",
+                "DIRECTDEBITTYPE_DC_BRI",
+                "DIRECTDEBITTYPE_DD_BRI",
+                "DIRECTDEBITTYPE_DD_MANDIRI",
+                "DIRECTDEBITTYPE_BA_BPI",
+                "DIRECTDEBITTYPE_DC_BPI",
+                "DIRECTDEBITTYPE_DD_BPI",
+                "DIRECTDEBITTYPE_BA_UBP",
+                "DIRECTDEBITTYPE_DC_UBP",
+                "DIRECTDEBITTYPE_DD_UBP",
+                "DIRECTDEBITTYPE_BCA_KLIKPAY",
+                "DIRECTDEBITTYPE_BA_BCA_KLIKPAY",
+                "DIRECTDEBITTYPE_DC_BCA_KLIKPAY",
+                "DIRECTDEBITTYPE_DD_BCA_KLIKPAY",
+                "DIRECTDEBITTYPE_DD_BDO_EPAY",
+                "DIRECTDEBITTYPE_DD_RCBC",
+                "DIRECTDEBITTYPE_DD_CHINABANK",
+                "DIRECTDEBITTYPE_BA_CHINABANK",
+                "DIRECTDEBITTYPE_DC_CHINABANK",
+                "DIRECTDEBITTYPE_DD_PUBLIC_FPX",
+                "DIRECTDEBITTYPE_DD_AMBANK_FPX",
+                "DIRECTDEBITTYPE_DD_KFH_FPX",
+                "DIRECTDEBITTYPE_DD_AGRO_FPX",
+                "DIRECTDEBITTYPE_DD_AFFIN_FPX",
+                "DIRECTDEBITTYPE_DD_ALLIANCE_FPX",
+                "DIRECTDEBITTYPE_DD_MUAMALAT_FPX",
+                "DIRECTDEBITTYPE_DD_HLB_FPX",
+                "DIRECTDEBITTYPE_DD_ISLAM_FPX",
+                "DIRECTDEBITTYPE_DD_RAKYAT_FPX",
+                "DIRECTDEBITTYPE_DD_CIMB_FPX",
+                "DIRECTDEBITTYPE_DD_UOB_FPX",
+                "DIRECTDEBITTYPE_DD_BOC_FPX",
+                "DIRECTDEBITTYPE_DD_BSN_FPX",
+                "DIRECTDEBITTYPE_DD_OCBC_FPX",
+                "DIRECTDEBITTYPE_DD_HSBC_FPX",
+                "DIRECTDEBITTYPE_DD_SCH_FPX",
+                "DIRECTDEBITTYPE_DD_MAYB2_U_FPX",
+                "DIRECTDEBITTYPE_DD_RHB_FPX",
+                "DIRECTDEBITTYPE_DD_UOB_FPX_BUSINESS",
+                "DIRECTDEBITTYPE_DD_AGRO_FPX_BUSINESS",
+                "DIRECTDEBITTYPE_DD_ALLIANCE_FPX_BUSINESS",
+                "DIRECTDEBITTYPE_DD_AMBANK_FPX_BUSINESS",
+                "DIRECTDEBITTYPE_DD_ISLAM_FPX_BUSINESS",
+                "DIRECTDEBITTYPE_DD_MUAMALAT_FPX_BUSINESS",
+                "DIRECTDEBITTYPE_DD_HLB_FPX_BUSINESS",
+                "DIRECTDEBITTYPE_DD_HSBC_FPX_BUSINESS",
+                "DIRECTDEBITTYPE_DD_RAKYAT_FPX_BUSINESS",
+                "DIRECTDEBITTYPE_DD_KFH_FPX_BUSINESS",
+                "DIRECTDEBITTYPE_DD_OCBC_FPX_BUSINESS",
+                "DIRECTDEBITTYPE_DD_PUBLIC_FPX_BUSINESS",
+                "DIRECTDEBITTYPE_DD_RHB_FPX_BUSINESS",
+                "DIRECTDEBITTYPE_DD_SCH_FPX_BUSINESS",
+                "DIRECTDEBITTYPE_DD_CITIBANK_FPX_BUSINESS",
+                "DIRECTDEBITTYPE_DD_BNP_FPX_BUSINESS",
+                "DIRECTDEBITTYPE_DD_DEUTSCHE_FPX_BUSINESS",
+                "DIRECTDEBITTYPE_DD_MAYB2_E_FPX_BUSINESS",
+                "DIRECTDEBITTYPE_DD_CIMB_FPX_BUSINESS",
+                "DIRECTDEBITTYPE_DD_AFFIN_FPX_BUSINESS",
+                "DIRECTDEBITTYPE_XENDIT_ENUM_DEFAULT_FALLBACK"
+            ]
+        },
+        "invoice.Ewallet": {
+            "type": "object",
+            "properties": {
+                "ewallet_type": {
+                    "$ref": "#/definitions/invoice.EwalletType"
+                }
+            }
+        },
+        "invoice.EwalletType": {
+            "type": "string",
+            "enum": [
+                "OVO",
+                "GOPAY",
+                "DANA",
+                "LINKAJA",
+                "PAYMAYA",
+                "SHOPEEPAY",
+                "GCASH",
+                "GRABPAY",
+                "ASTRAPAY",
+                "NEXCASH",
+                "JENIUSPAY",
+                "MOMO",
+                "ZALOPAY",
+                "VIETTELPAY",
+                "VNPTWALLET",
+                "APPOTA",
+                "LINEPAY",
+                "TRUEMONEY",
+                "WECHATPAY",
+                "TOUCHNGO",
+                "UNKNOWN_ENUM_VALUE"
+            ],
+            "x-enum-varnames": [
+                "EWALLETTYPE_OVO",
+                "EWALLETTYPE_GOPAY",
+                "EWALLETTYPE_DANA",
+                "EWALLETTYPE_LINKAJA",
+                "EWALLETTYPE_PAYMAYA",
+                "EWALLETTYPE_SHOPEEPAY",
+                "EWALLETTYPE_GCASH",
+                "EWALLETTYPE_GRABPAY",
+                "EWALLETTYPE_ASTRAPAY",
+                "EWALLETTYPE_NEXCASH",
+                "EWALLETTYPE_JENIUSPAY",
+                "EWALLETTYPE_MOMO",
+                "EWALLETTYPE_ZALOPAY",
+                "EWALLETTYPE_VIETTELPAY",
+                "EWALLETTYPE_VNPTWALLET",
+                "EWALLETTYPE_APPOTA",
+                "EWALLETTYPE_LINEPAY",
+                "EWALLETTYPE_TRUEMONEY",
+                "EWALLETTYPE_WECHATPAY",
+                "EWALLETTYPE_TOUCHNGO",
+                "EWALLETTYPE_XENDIT_ENUM_DEFAULT_FALLBACK"
+            ]
+        },
+        "invoice.Invoice": {
+            "type": "object",
+            "properties": {
+                "amount": {
+                    "description": "The total amount of the invoice.",
+                    "type": "number"
+                },
+                "available_banks": {
+                    "description": "An array of available banks for payment.",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/invoice.Bank"
+                    }
+                },
+                "available_direct_debits": {
+                    "description": "An array of available direct debit options for payment.",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/invoice.DirectDebit"
+                    }
+                },
+                "available_ewallets": {
+                    "description": "An array of available e-wallets for payment.",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/invoice.Ewallet"
+                    }
+                },
+                "available_paylaters": {
+                    "description": "An array of available pay-later options for payment.",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/invoice.Paylater"
+                    }
+                },
+                "available_qr_codes": {
+                    "description": "An array of available QR codes for payment.",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/invoice.QrCode"
+                    }
+                },
+                "available_retail_outlets": {
+                    "description": "An array of available retail outlets for payment.",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/invoice.RetailOutlet"
+                    }
+                },
+                "channel_properties": {
+                    "$ref": "#/definitions/invoice.ChannelProperties"
+                },
+                "created": {
+                    "description": "Representing a date and time in ISO 8601 format.",
+                    "type": "string"
+                },
+                "currency": {
+                    "$ref": "#/definitions/invoice.InvoiceCurrency"
+                },
+                "customer": {
+                    "$ref": "#/definitions/invoice.CustomerObject"
+                },
+                "customer_notification_preference": {
+                    "$ref": "#/definitions/invoice.NotificationPreference"
+                },
+                "description": {
+                    "description": "A description of the invoice.",
+                    "type": "string"
+                },
+                "expiry_date": {
+                    "description": "Representing a date and time in ISO 8601 format.",
+                    "type": "string"
+                },
+                "external_id": {
+                    "description": "The external identifier for the invoice.",
+                    "type": "string"
+                },
+                "failure_redirect_url": {
+                    "description": "The URL to redirect to on payment failure.",
+                    "type": "string"
+                },
+                "fees": {
+                    "description": "An array of fees associated with the invoice.",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/invoice.InvoiceFee"
+                    }
+                },
+                "fixed_va": {
+                    "description": "Indicates whether the virtual account is fixed.",
+                    "type": "boolean"
+                },
+                "id": {
+                    "description": "The unique identifier for the invoice.",
+                    "type": "string"
+                },
+                "invoice_url": {
+                    "description": "The URL to view the invoice.",
+                    "type": "string"
+                },
+                "items": {
+                    "description": "An array of items included in the invoice.",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/invoice.InvoiceItem"
+                    }
+                },
+                "locale": {
+                    "description": "The locale or language used for the invoice.",
+                    "type": "string"
+                },
+                "merchant_name": {
+                    "description": "The name of the merchant.",
+                    "type": "string"
+                },
+                "merchant_profile_picture_url": {
+                    "description": "The URL of the merchant's profile picture.",
+                    "type": "string"
+                },
+                "metadata": {
+                    "description": "A free-format JSON for additional information that you may use. Object can be up to 50 keys, with key names up to 40 characters long and values up to 500 characters long.",
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "payer_email": {
+                    "description": "The email address of the payer.",
+                    "type": "string"
+                },
+                "payment_method": {
+                    "$ref": "#/definitions/invoice.InvoicePaymentMethod"
+                },
+                "reminder_date": {
+                    "description": "Representing a date and time in ISO 8601 format.",
+                    "type": "string"
+                },
+                "should_authenticate_credit_card": {
+                    "description": "Indicates whether credit card authentication is required.",
+                    "type": "boolean"
+                },
+                "should_exclude_credit_card": {
+                    "description": "Indicates whether credit card payments should be excluded.",
+                    "type": "boolean"
+                },
+                "should_send_email": {
+                    "description": "Indicates whether email notifications should be sent.",
+                    "type": "boolean"
+                },
+                "status": {
+                    "$ref": "#/definitions/invoice.InvoiceStatus"
+                },
+                "success_redirect_url": {
+                    "description": "The URL to redirect to on successful payment.",
+                    "type": "string"
+                },
+                "updated": {
+                    "description": "Representing a date and time in ISO 8601 format.",
+                    "type": "string"
+                },
+                "user_id": {
+                    "description": "The user ID associated with the invoice.",
+                    "type": "string"
+                }
+            }
+        },
+        "invoice.InvoiceCallback": {
+            "type": "object",
+            "properties": {
+                "amount": {
+                    "description": "Nominal amount for the invoice",
+                    "type": "number"
+                },
+                "bank_code": {
+                    "description": "The bank code for the bank details.",
+                    "type": "string"
+                },
+                "created": {
+                    "description": "The date and time when the invoice was created.",
+                    "type": "string"
+                },
+                "credit_card_charge_id": {
+                    "description": "The ID associated with a credit card charge (if applicable).",
+                    "type": "string"
+                },
+                "currency": {
+                    "description": "The currency of the invoice.",
+                    "type": "string"
+                },
+                "description": {
+                    "description": "Description for the invoice",
+                    "type": "string"
+                },
+                "ewallet_type": {
+                    "description": "The type of eWallet.",
+                    "type": "string"
+                },
+                "external_id": {
+                    "description": "ID of your choice (typically the unique identifier of an invoice in your system)",
+                    "type": "string"
+                },
+                "failure_redirect_url": {
+                    "description": "The URL to redirect to on payment failure.",
+                    "type": "string"
+                },
+                "fees": {
+                    "description": "An array of fees associated with the invoice.",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/invoice.InvoiceFee"
+                    }
+                },
+                "id": {
+                    "description": "An invoice ID generated by Xendit",
+                    "type": "string"
+                },
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/invoice.InvoiceCallbackItem"
+                    }
+                },
+                "merchant_name": {
+                    "description": "The name of company or website",
+                    "type": "string"
+                },
+                "on_demand_link": {
+                    "description": "The on-demand link.",
+                    "type": "string"
+                },
+                "paid_amount": {
+                    "description": "Total amount paid for the invoice",
+                    "type": "number"
+                },
+                "paid_at": {
+                    "description": "The date and time when the invoice was paid.",
+                    "type": "string"
+                },
+                "payer_email": {
+                    "description": "Email of the payer",
+                    "type": "string"
+                },
+                "payment_channel": {
+                    "description": "The payment channel.",
+                    "type": "string"
+                },
+                "payment_destination": {
+                    "description": "The payment destination.",
+                    "type": "string"
+                },
+                "payment_details": {
+                    "$ref": "#/definitions/invoice.PaymentDetails"
+                },
+                "payment_id": {
+                    "description": "The ID of the payment.",
+                    "type": "string"
+                },
+                "payment_method": {
+                    "description": "The payment method used for the invoice.",
+                    "type": "string"
+                },
+                "recurring_payment_id": {
+                    "description": "The ID of the recurring payment.",
+                    "type": "string"
+                },
+                "should_authenticate_credit_card": {
+                    "description": "Indicates whether credit card authentication is required.",
+                    "type": "boolean"
+                },
+                "status": {
+                    "description": "The status of the invoice.",
+                    "type": "string"
+                },
+                "success_redirect_url": {
+                    "description": "The URL to redirect to on successful payment.",
+                    "type": "string"
+                },
+                "updated": {
+                    "description": "The date and time when the invoice was last updated.",
+                    "type": "string"
+                },
+                "user_id": {
+                    "description": "Xendit Business ID",
+                    "type": "string"
+                }
+            }
+        },
+        "invoice.InvoiceCallbackItem": {
+            "type": "object",
+            "properties": {
+                "category": {
+                    "description": "The category of the item.",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "The name of the item.",
+                    "type": "string"
+                },
+                "price": {
+                    "description": "The price of the item.",
+                    "type": "number"
+                },
+                "quantity": {
+                    "description": "The quantity of the item. Must be greater than or equal to 0.",
+                    "type": "number"
+                },
+                "url": {
+                    "description": "The URL associated with the item.",
+                    "type": "string"
+                }
+            }
+        },
+        "invoice.InvoiceCurrency": {
+            "type": "string",
+            "enum": [
+                "IDR",
+                "USD",
+                "THB",
+                "VND",
+                "PHP",
+                "MYR",
+                "UNKNOWN_ENUM_VALUE"
+            ],
+            "x-enum-varnames": [
+                "INVOICECURRENCY_IDR",
+                "INVOICECURRENCY_USD",
+                "INVOICECURRENCY_THB",
+                "INVOICECURRENCY_VND",
+                "INVOICECURRENCY_PHP",
+                "INVOICECURRENCY_MYR",
+                "INVOICECURRENCY_XENDIT_ENUM_DEFAULT_FALLBACK"
+            ]
+        },
+        "invoice.InvoiceFee": {
+            "type": "object",
+            "properties": {
+                "type": {
+                    "description": "The type of fee.",
+                    "type": "string"
+                },
+                "value": {
+                    "description": "The value or amount of the fee.",
+                    "type": "number"
+                }
+            }
+        },
+        "invoice.InvoiceItem": {
+            "type": "object",
+            "properties": {
+                "category": {
+                    "description": "The category of the item.",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "The name of the item.",
+                    "type": "string"
+                },
+                "price": {
+                    "description": "The price of the item.",
+                    "type": "number"
+                },
+                "quantity": {
+                    "description": "The quantity of the item. Must be greater than or equal to 0.",
+                    "type": "number"
+                },
+                "reference_id": {
+                    "description": "The reference ID of the item.",
+                    "type": "string"
+                },
+                "url": {
+                    "description": "The URL associated with the item.",
+                    "type": "string"
+                }
+            }
+        },
+        "invoice.InvoicePaymentMethod": {
+            "type": "string",
+            "enum": [
+                "POOL",
+                "CALLBACK_VIRTUAL_ACCOUNT",
+                "CREDIT_CARD",
+                "RETAIL_OUTLET",
+                "QR_CODE",
+                "QRIS",
+                "EWALLET",
+                "DIRECT_DEBIT",
+                "BANK_TRANSFER",
+                "PAYLATER",
+                "CRYPTOCURRENCY",
+                "UNKNOWN_ENUM_VALUE"
+            ],
+            "x-enum-varnames": [
+                "INVOICEPAYMENTMETHOD_POOL",
+                "INVOICEPAYMENTMETHOD_CALLBACK_VIRTUAL_ACCOUNT",
+                "INVOICEPAYMENTMETHOD_CREDIT_CARD",
+                "INVOICEPAYMENTMETHOD_RETAIL_OUTLET",
+                "INVOICEPAYMENTMETHOD_QR_CODE",
+                "INVOICEPAYMENTMETHOD_QRIS",
+                "INVOICEPAYMENTMETHOD_EWALLET",
+                "INVOICEPAYMENTMETHOD_DIRECT_DEBIT",
+                "INVOICEPAYMENTMETHOD_BANK_TRANSFER",
+                "INVOICEPAYMENTMETHOD_PAYLATER",
+                "INVOICEPAYMENTMETHOD_CRYPTOCURRENCY",
+                "INVOICEPAYMENTMETHOD_XENDIT_ENUM_DEFAULT_FALLBACK"
+            ]
+        },
+        "invoice.InvoiceStatus": {
+            "type": "string",
+            "enum": [
+                "PENDING",
+                "PAID",
+                "SETTLED",
+                "EXPIRED",
+                "UNKNOWN_ENUM_VALUE"
+            ],
+            "x-enum-varnames": [
+                "INVOICESTATUS_PENDING",
+                "INVOICESTATUS_PAID",
+                "INVOICESTATUS_SETTLED",
+                "INVOICESTATUS_EXPIRED",
+                "INVOICESTATUS_XENDIT_ENUM_DEFAULT_FALLBACK"
+            ]
+        },
+        "invoice.NotificationChannel": {
+            "type": "string",
+            "enum": [
+                "email",
+                "sms",
+                "whatsapp",
+                "viber",
+                "UNKNOWN_ENUM_VALUE"
+            ],
+            "x-enum-varnames": [
+                "NOTIFICATIONCHANNEL_EMAIL",
+                "NOTIFICATIONCHANNEL_SMS",
+                "NOTIFICATIONCHANNEL_WHATSAPP",
+                "NOTIFICATIONCHANNEL_VIBER",
+                "NOTIFICATIONCHANNEL_XENDIT_ENUM_DEFAULT_FALLBACK"
+            ]
+        },
+        "invoice.NotificationPreference": {
+            "type": "object",
+            "properties": {
+                "invoice_created": {
+                    "description": "Notification channels for when an invoice is created.",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/invoice.NotificationChannel"
+                    }
+                },
+                "invoice_paid": {
+                    "description": "Notification channels for when an invoice is paid.",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/invoice.NotificationChannel"
+                    }
+                },
+                "invoice_reminder": {
+                    "description": "Notification channels for invoice reminders.",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/invoice.NotificationChannel"
+                    }
+                }
+            }
+        },
+        "invoice.NullableString": {
+            "type": "object"
+        },
+        "invoice.Paylater": {
+            "type": "object",
+            "properties": {
+                "paylater_type": {
+                    "$ref": "#/definitions/invoice.PaylaterType"
+                },
+                "should_exclude": {
+                    "description": "Indicates whether this paylater option should be excluded.",
+                    "type": "boolean"
+                }
+            }
+        },
+        "invoice.PaylaterType": {
+            "type": "string",
+            "enum": [
+                "KREDIVO",
+                "AKULAKU",
+                "UANGME",
+                "BILLEASE",
+                "CASHALO",
+                "ATOME",
+                "UNKNOWN_ENUM_VALUE"
+            ],
+            "x-enum-varnames": [
+                "PAYLATERTYPE_KREDIVO",
+                "PAYLATERTYPE_AKULAKU",
+                "PAYLATERTYPE_UANGME",
+                "PAYLATERTYPE_BILLEASE",
+                "PAYLATERTYPE_CASHALO",
+                "PAYLATERTYPE_ATOME",
+                "PAYLATERTYPE_XENDIT_ENUM_DEFAULT_FALLBACK"
+            ]
+        },
+        "invoice.PaymentDetails": {
+            "type": "object",
+            "properties": {
+                "receipt_id": {
+                    "description": "The unique identifier or reference ID associated with the payment receipt.",
+                    "type": "string"
+                },
+                "source": {
+                    "description": "The source or method of payment.",
+                    "type": "string"
+                }
+            }
+        },
+        "invoice.QrCode": {
+            "type": "object",
+            "properties": {
+                "qr_code_type": {
+                    "$ref": "#/definitions/invoice.QrCodeType"
+                }
+            }
+        },
+        "invoice.QrCodeType": {
+            "type": "string",
+            "enum": [
+                "QRIS",
+                "PROMPTPAY",
+                "QRPH",
+                "UNKNOWN_ENUM_VALUE"
+            ],
+            "x-enum-varnames": [
+                "QRCODETYPE_QRIS",
+                "QRCODETYPE_PROMPTPAY",
+                "QRCODETYPE_QRPH",
+                "QRCODETYPE_XENDIT_ENUM_DEFAULT_FALLBACK"
+            ]
+        },
+        "invoice.RetailOutlet": {
+            "type": "object",
+            "properties": {
+                "merchant_name": {
+                    "description": "The name of the merchant.",
+                    "type": "string"
+                },
+                "payment_code": {
+                    "description": "The payment code.",
+                    "type": "string"
+                },
+                "retail_outlet_name": {
+                    "$ref": "#/definitions/invoice.RetailOutletName"
+                },
+                "transfer_amount": {
+                    "description": "The transfer amount.",
+                    "type": "number"
+                }
+            }
+        },
+        "invoice.RetailOutletName": {
+            "type": "string",
+            "enum": [
+                "ALFAMART",
+                "INDOMARET",
+                "7ELEVEN",
+                "CEBUANA",
+                "DP_ECPAY_LOAN",
+                "DP_MLHUILLIER",
+                "DP_PALAWAN",
+                "DP_ECPAY_SCHOOL",
+                "LBC",
+                "UNKNOWN_ENUM_VALUE"
+            ],
+            "x-enum-varnames": [
+                "RETAILOUTLETNAME_ALFAMART",
+                "RETAILOUTLETNAME_INDOMARET",
+                "RETAILOUTLETNAME__7_ELEVEN",
+                "RETAILOUTLETNAME_CEBUANA",
+                "RETAILOUTLETNAME_DP_ECPAY_LOAN",
+                "RETAILOUTLETNAME_DP_MLHUILLIER",
+                "RETAILOUTLETNAME_DP_PALAWAN",
+                "RETAILOUTLETNAME_DP_ECPAY_SCHOOL",
+                "RETAILOUTLETNAME_LBC",
+                "RETAILOUTLETNAME_XENDIT_ENUM_DEFAULT_FALLBACK"
+            ]
         }
     },
     "securityDefinitions": {

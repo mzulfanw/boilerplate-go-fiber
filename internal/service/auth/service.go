@@ -7,11 +7,13 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 
 	"golang.org/x/crypto/bcrypt"
 
+	redisinfra "github.com/mzulfanw/boilerplate-go-fiber/infrastructure/redis"
 	"github.com/mzulfanw/boilerplate-go-fiber/internal/config"
 	authdomain "github.com/mzulfanw/boilerplate-go-fiber/internal/domain/auth"
 )
@@ -22,12 +24,17 @@ var (
 	ErrInvalidAccessToken = errors.New("invalid access token")
 	ErrUserDisabled       = errors.New("user is disabled")
 	ErrUserLocked         = errors.New("user is locked")
+	ErrInvalidResetToken  = errors.New("invalid reset token")
+	ErrInvalidPassword    = errors.New("invalid password")
 )
 
 type Service struct {
 	repo             Repository
 	tokenManager     TokenManager
+	cache            redisinfra.Cache
 	refreshTTL       time.Duration
+	passwordResetTTL time.Duration
+	resetCooldown    time.Duration
 	maxLoginAttempts int
 	lockoutDuration  time.Duration
 }
@@ -50,10 +57,22 @@ func NewService(cfg config.Config, repo Repository, tokenManager TokenManager) (
 	return &Service{
 		repo:             repo,
 		tokenManager:     tokenManager,
+		cache:            nil,
 		refreshTTL:       cfg.RefreshTokenTTL,
+		passwordResetTTL: cfg.AuthPasswordResetTTL,
+		resetCooldown:    cfg.AuthPasswordResetCooldown,
 		maxLoginAttempts: cfg.AuthMaxLoginAttempts,
 		lockoutDuration:  cfg.AuthLockoutDuration,
 	}, nil
+}
+
+func NewServiceWithCache(cfg config.Config, repo Repository, tokenManager TokenManager, cache redisinfra.Cache) (*Service, error) {
+	service, err := NewService(cfg, repo, tokenManager)
+	if err != nil {
+		return nil, err
+	}
+	service.cache = cache
+	return service, nil
 }
 
 func (s *Service) Login(ctx context.Context, email, password, ip, userAgent string) (TokenPair, error) {
@@ -261,6 +280,128 @@ func (s *Service) ValidateAccessToken(ctx context.Context, tokenString string) (
 
 func (s *Service) CleanupExpiredRefreshTokens(ctx context.Context) (int64, error) {
 	return s.repo.DeleteExpiredRefreshTokens(ctx)
+}
+
+type PasswordResetRequest struct {
+	Email      string
+	Token      string
+	ExpiresAt  time.Time
+	ShouldSend bool
+}
+
+func (s *Service) RequestPasswordReset(ctx context.Context, email string) (PasswordResetRequest, error) {
+	normalized := strings.TrimSpace(strings.ToLower(email))
+	if normalized == "" {
+		return PasswordResetRequest{}, ErrInvalidCredentials
+	}
+	if s.cache == nil {
+		return PasswordResetRequest{}, errors.New("auth: cache is nil")
+	}
+
+	user, err := s.repo.FindUserByEmail(ctx, normalized)
+	if err != nil {
+		if errors.Is(err, authdomain.ErrNotFound) {
+			return PasswordResetRequest{ShouldSend: false}, nil
+		}
+		return PasswordResetRequest{}, err
+	}
+	if !user.IsActive {
+		return PasswordResetRequest{ShouldSend: false}, nil
+	}
+
+	if s.resetCooldown > 0 {
+		cooldownKey := fmt.Sprintf("auth:password_reset:cooldown:%s", user.ID)
+		ok, err := s.cache.SetIfNotExists(cooldownKey, "1", s.resetCooldown)
+		if err != nil {
+			return PasswordResetRequest{}, err
+		}
+		if !ok {
+			return PasswordResetRequest{ShouldSend: false}, nil
+		}
+	}
+
+	rawToken, err := generateToken(32)
+	if err != nil {
+		return PasswordResetRequest{}, err
+	}
+	tokenHash := hashToken(rawToken)
+	tokenKey := fmt.Sprintf("auth:password_reset:token:%s", tokenHash)
+	userKey := fmt.Sprintf("auth:password_reset:user:%s", user.ID)
+
+	if existing, err := s.cache.GetString(userKey); err == nil && existing != "" {
+		_ = s.cache.Delete(fmt.Sprintf("auth:password_reset:token:%s", existing))
+	}
+
+	ttl := s.passwordResetTTL
+	if ttl <= 0 {
+		ttl = 15 * time.Minute
+	}
+
+	if err := s.cache.SetWithTTL(tokenKey, user.ID, ttl); err != nil {
+		return PasswordResetRequest{}, err
+	}
+	if err := s.cache.SetWithTTL(userKey, tokenHash, ttl); err != nil {
+		return PasswordResetRequest{}, err
+	}
+
+	return PasswordResetRequest{
+		Email:      user.Email,
+		Token:      rawToken,
+		ExpiresAt:  time.Now().Add(ttl),
+		ShouldSend: true,
+	}, nil
+}
+
+func (s *Service) ResetPassword(ctx context.Context, token, newPassword string) error {
+	trimmedToken := strings.TrimSpace(token)
+	trimmedPassword := strings.TrimSpace(newPassword)
+	if trimmedToken == "" {
+		return ErrInvalidResetToken
+	}
+	if trimmedPassword == "" {
+		return ErrInvalidPassword
+	}
+	if s.cache == nil {
+		return errors.New("auth: cache is nil")
+	}
+
+	tokenHash := hashToken(trimmedToken)
+	tokenKey := fmt.Sprintf("auth:password_reset:token:%s", tokenHash)
+
+	userID, err := s.cache.GetString(tokenKey)
+	if err != nil {
+		if errors.Is(err, redisinfra.ErrKeyNotFound) {
+			return ErrInvalidResetToken
+		}
+		return err
+	}
+
+	user, err := s.repo.FindUserByID(ctx, userID)
+	if err != nil {
+		if errors.Is(err, authdomain.ErrNotFound) {
+			return ErrInvalidResetToken
+		}
+		return err
+	}
+	if !user.IsActive {
+		return ErrInvalidResetToken
+	}
+
+	hashed, err := bcrypt.GenerateFromPassword([]byte(trimmedPassword), bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+
+	if err := s.repo.UpdatePassword(ctx, user.ID, string(hashed)); err != nil {
+		return err
+	}
+	if err := s.repo.RevokeAllRefreshTokens(ctx, user.ID); err != nil {
+		return err
+	}
+
+	_ = s.cache.Delete(tokenKey)
+	_ = s.cache.Delete(fmt.Sprintf("auth:password_reset:user:%s", user.ID))
+	return nil
 }
 
 func (s *Service) createAccessToken(userID string, roles, permissions []string, tokenVersion int) (string, int64, error) {

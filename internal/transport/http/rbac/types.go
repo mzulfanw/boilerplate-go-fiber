@@ -1,12 +1,12 @@
 package rbac
 
 type RoleRequest struct {
-	Name        string `json:"name"`
+	Name        string `json:"name" validate:"required,notblank"`
 	Description string `json:"description"`
 }
 
 type PermissionRequest struct {
-	Name        string `json:"name"`
+	Name        string `json:"name" validate:"required,notblank"`
 	Description string `json:"description"`
 }
 

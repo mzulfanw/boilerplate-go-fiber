@@ -19,4 +19,5 @@ type Repository interface {
 	DeleteExpiredRefreshTokens(ctx context.Context) (int64, error)
 	RecordLoginFailure(ctx context.Context, userID string, maxAttempts int, lockoutSeconds int64) error
 	ResetLoginFailures(ctx context.Context, userID string) error
+	UpdatePassword(ctx context.Context, userID, passwordHash string) error
 }

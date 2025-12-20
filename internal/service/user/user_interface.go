@@ -8,7 +8,7 @@ import (
 )
 
 type Repository interface {
-	ListUsers(ctx context.Context) ([]userdomain.User, error)
+	ListUsers(ctx context.Context, filter userdomain.ListFilter) (userdomain.ListResult, error)
 	GetUser(ctx context.Context, id string) (userdomain.User, error)
 	CreateUser(ctx context.Context, email, passwordHash string, isActive bool, roleIDs []string) (userdomain.User, error)
 	UpdateUser(ctx context.Context, id, email, passwordHash string, isActive bool, bumpTokenVersion bool) (userdomain.User, error)

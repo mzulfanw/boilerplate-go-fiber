@@ -25,8 +25,9 @@ func NewService(repo Repository) (*Service, error) {
 	return &Service{repo: repo}, nil
 }
 
-func (s *Service) ListUsers(ctx context.Context) ([]userdomain.User, error) {
-	return s.repo.ListUsers(ctx)
+func (s *Service) ListUsers(ctx context.Context, filter userdomain.ListFilter) (userdomain.ListResult, error) {
+	filter.Search = strings.TrimSpace(filter.Search)
+	return s.repo.ListUsers(ctx, filter)
 }
 
 func (s *Service) GetUser(ctx context.Context, id string) (userdomain.User, error) {

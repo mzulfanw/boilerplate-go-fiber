@@ -1,0 +1,13 @@
+.git
+.env
+.env.*
+*.log
+
+bin/
+tmp/
+dist/
+vendor/
+
+node_modules/
+
+.DS_Store

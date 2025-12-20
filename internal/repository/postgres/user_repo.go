@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/jackc/pgx/v5"
@@ -20,28 +21,83 @@ func NewUserRepository(pool *pgxpool.Pool) *UserRepository {
 	return &UserRepository{pool: pool}
 }
 
-func (r *UserRepository) ListUsers(ctx context.Context) ([]userdomain.User, error) {
-	const query = `
+func (r *UserRepository) ListUsers(ctx context.Context, filter userdomain.ListFilter) (userdomain.ListResult, error) {
+	where, args := buildUserListFilters(filter)
+
+	countQuery := `SELECT COUNT(*) FROM users`
+	if where != "" {
+		countQuery += " " + where
+	}
+
+	var total int
+	if err := r.pool.QueryRow(ctx, countQuery, args...).Scan(&total); err != nil {
+		return userdomain.ListResult{}, err
+	}
+
+	limit := filter.Pagination.Limit()
+	if limit <= 0 {
+		limit = 20
+	}
+	offset := filter.Pagination.Offset()
+	if offset < 0 {
+		offset = 0
+	}
+
+	listQuery := fmt.Sprintf(`
 		SELECT id::text, email, is_active, created_at, updated_at
 		FROM users
+		%s
 		ORDER BY created_at DESC
-	`
+		LIMIT $%d OFFSET $%d
+	`, where, len(args)+1, len(args)+2)
 
-	rows, err := r.pool.Query(ctx, query)
+	listArgs := append(args, limit, offset)
+	rows, err := r.pool.Query(ctx, listQuery, listArgs...)
 	if err != nil {
-		return nil, err
+		return userdomain.ListResult{}, err
 	}
 	defer rows.Close()
 
-	var users []userdomain.User
+	users := make([]userdomain.User, 0)
 	for rows.Next() {
 		var user userdomain.User
 		if err := rows.Scan(&user.ID, &user.Email, &user.IsActive, &user.CreatedAt, &user.UpdatedAt); err != nil {
-			return nil, err
+			return userdomain.ListResult{}, err
 		}
 		users = append(users, user)
 	}
-	return users, rows.Err()
+	if err := rows.Err(); err != nil {
+		return userdomain.ListResult{}, err
+	}
+
+	return userdomain.ListResult{
+		Users: users,
+		Total: total,
+	}, nil
+}
+
+func buildUserListFilters(filter userdomain.ListFilter) (string, []any) {
+	conditions := make([]string, 0, 2)
+	args := make([]any, 0, 2)
+	index := 1
+
+	if search := strings.TrimSpace(filter.Search); search != "" {
+		args = append(args, "%"+search+"%")
+		conditions = append(conditions, fmt.Sprintf("(email ILIKE $%d OR id::text ILIKE $%d)", index, index))
+		index++
+	}
+
+	if filter.IsActive != nil {
+		args = append(args, *filter.IsActive)
+		conditions = append(conditions, fmt.Sprintf("is_active = $%d", index))
+		index++
+	}
+
+	if len(conditions) == 0 {
+		return "", args
+	}
+
+	return "WHERE " + strings.Join(conditions, " AND "), args
 }
 
 func (r *UserRepository) GetUser(ctx context.Context, id string) (userdomain.User, error) {

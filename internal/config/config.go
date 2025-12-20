@@ -80,6 +80,26 @@ type Config struct {
 	OTELExporterEndpoint string
 	OTELExporterInsecure bool
 	OTELSampleRatio      float64
+
+	EmailEnabled           bool
+	EmailFrom              string
+	EmailTemplateDir       string
+	SMTPHost               string
+	SMTPPort               int
+	SMTPUsername           string
+	SMTPPassword           string
+	SMTPTLSEnabled         bool
+	SMTPStartTLSEnabled    bool
+	SMTPInsecureSkipVerify bool
+	SMTPTimeout            time.Duration
+
+	AuthPasswordResetTTL      time.Duration
+	AuthPasswordResetCooldown time.Duration
+	AuthPasswordResetURL      string
+
+	XENDIT_SECRET_KEY    string
+	XENDIT_PUBLIC_KEY    string
+	XENDIT_WEBHOOK_TOKEN string
 }
 
 func Load() (Config, error) {
@@ -127,6 +147,18 @@ func Load() (Config, error) {
 		MetricsPath:          getString("METRICS_PATH", "/metrics"),
 		SwaggerPath:          getString("SWAGGER_PATH", "/docs"),
 		OTELExporterEndpoint: getString("OTEL_EXPORTER_OTLP_ENDPOINT", "localhost:4317"),
+
+		EmailEnabled:        false,
+		EmailFrom:           getString("EMAIL_FROM", ""),
+		EmailTemplateDir:    getString("EMAIL_TEMPLATE_DIR", "templates/email"),
+		SMTPHost:            getString("SMTP_HOST", ""),
+		SMTPUsername:        getString("SMTP_USERNAME", ""),
+		SMTPPassword:        getString("SMTP_PASSWORD", ""),
+		SMTPStartTLSEnabled: true,
+
+		XENDIT_SECRET_KEY:    getString("XENDIT_SECRET_KEY", ""),
+		XENDIT_PUBLIC_KEY:    getString("XENDIT_PUBLIC_KEY", ""),
+		XENDIT_WEBHOOK_TOKEN: getString("XENDIT_WEBHOOK_TOKEN", ""),
 	}
 
 	var err error
@@ -232,6 +264,31 @@ func Load() (Config, error) {
 	if cfg.OTELSampleRatio, err = getFloat("OTEL_SAMPLE_RATIO", 1.0); err != nil {
 		return Config{}, err
 	}
+	if cfg.EmailEnabled, err = getBool("EMAIL_ENABLED", false); err != nil {
+		return Config{}, err
+	}
+	if cfg.SMTPStartTLSEnabled, err = getBool("SMTP_STARTTLS_ENABLED", true); err != nil {
+		return Config{}, err
+	}
+	if cfg.SMTPPort, err = getInt("SMTP_PORT", 587); err != nil {
+		return Config{}, err
+	}
+	if cfg.SMTPTLSEnabled, err = getBool("SMTP_TLS_ENABLED", false); err != nil {
+		return Config{}, err
+	}
+	if cfg.SMTPInsecureSkipVerify, err = getBool("SMTP_TLS_INSECURE_SKIP_VERIFY", false); err != nil {
+		return Config{}, err
+	}
+	if cfg.SMTPTimeout, err = getDuration("SMTP_TIMEOUT", 10*time.Second); err != nil {
+		return Config{}, err
+	}
+	if cfg.AuthPasswordResetTTL, err = getDuration("AUTH_PASSWORD_RESET_TTL", 15*time.Minute); err != nil {
+		return Config{}, err
+	}
+	if cfg.AuthPasswordResetCooldown, err = getDuration("AUTH_PASSWORD_RESET_COOLDOWN", time.Minute); err != nil {
+		return Config{}, err
+	}
+	cfg.AuthPasswordResetURL = getString("AUTH_PASSWORD_RESET_URL", "")
 
 	if strings.TrimSpace(cfg.HTTPAddr) == "" {
 		return Config{}, fmt.Errorf("HTTP_ADDR is required")
@@ -244,6 +301,13 @@ func Load() (Config, error) {
 	}
 	if cfg.OTELSampleRatio < 0 || cfg.OTELSampleRatio > 1 {
 		return Config{}, fmt.Errorf("OTEL_SAMPLE_RATIO must be between 0 and 1")
+	}
+
+	if strings.TrimSpace(cfg.XENDIT_SECRET_KEY) == "" {
+		return Config{}, fmt.Errorf("XENDIT_SECRET_KEY is required")
+	}
+	if strings.TrimSpace(cfg.XENDIT_PUBLIC_KEY) == "" {
+		return Config{}, fmt.Errorf("XENDIT_PUBLIC_KEY is required")
 	}
 
 	return cfg, nil
