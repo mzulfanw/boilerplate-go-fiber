@@ -43,6 +43,43 @@ type Config struct {
 	RedisDefaultTTL            time.Duration
 	RedisTLSEnabled            bool
 	RedisTLSInsecureSkipVerify bool
+
+	PostgresDSN               string
+	PostgresHost              string
+	PostgresPort              int
+	PostgresUser              string
+	PostgresPassword          string
+	PostgresDB                string
+	PostgresSSLMode           string
+	PostgresConnectTimeout    time.Duration
+	PostgresMaxConns          int
+	PostgresMinConns          int
+	PostgresMaxConnLifetime   time.Duration
+	PostgresMaxConnIdleTime   time.Duration
+	PostgresHealthCheckPeriod time.Duration
+
+	JWTSecret       string
+	JWTIssuer       string
+	AccessTokenTTL  time.Duration
+	RefreshTokenTTL time.Duration
+
+	RefreshTokenCleanupInterval time.Duration
+
+	AuthMaxLoginAttempts int
+	AuthLockoutDuration  time.Duration
+	AuthLoginRateLimit   int
+	AuthLoginRateWindow  time.Duration
+
+	MetricsEnabled bool
+	MetricsPath    string
+
+	SwaggerEnabled bool
+	SwaggerPath    string
+
+	TracingEnabled       bool
+	OTELExporterEndpoint string
+	OTELExporterInsecure bool
+	OTELSampleRatio      float64
 }
 
 func Load() (Config, error) {
@@ -76,6 +113,20 @@ func Load() (Config, error) {
 		RedisAddr:     getString("REDIS_ADDR", "localhost:6379"),
 		RedisUsername: getString("REDIS_USERNAME", ""),
 		RedisPassword: getString("REDIS_PASSWORD", ""),
+
+		PostgresDSN:      getString("POSTGRES_DSN", ""),
+		PostgresHost:     getString("POSTGRES_HOST", "localhost"),
+		PostgresUser:     getString("POSTGRES_USER", "postgres"),
+		PostgresPassword: getString("POSTGRES_PASSWORD", ""),
+		PostgresDB:       getString("POSTGRES_DB", "postgres"),
+		PostgresSSLMode:  getString("POSTGRES_SSLMODE", "disable"),
+
+		JWTSecret: getString("JWT_SECRET", ""),
+		JWTIssuer: getString("JWT_ISSUER", "boilerplate-go-fiber"),
+
+		MetricsPath:          getString("METRICS_PATH", "/metrics"),
+		SwaggerPath:          getString("SWAGGER_PATH", "/docs"),
+		OTELExporterEndpoint: getString("OTEL_EXPORTER_OTLP_ENDPOINT", "localhost:4317"),
 	}
 
 	var err error
@@ -124,12 +175,75 @@ func Load() (Config, error) {
 	if cfg.RedisTLSInsecureSkipVerify, err = getBool("REDIS_TLS_INSECURE_SKIP_VERIFY", false); err != nil {
 		return Config{}, err
 	}
+	if cfg.PostgresPort, err = getInt("POSTGRES_PORT", 5432); err != nil {
+		return Config{}, err
+	}
+	if cfg.PostgresMaxConns, err = getInt("POSTGRES_MAX_CONNS", 10); err != nil {
+		return Config{}, err
+	}
+	if cfg.PostgresMinConns, err = getInt("POSTGRES_MIN_CONNS", 0); err != nil {
+		return Config{}, err
+	}
+	if cfg.PostgresConnectTimeout, err = getDuration("POSTGRES_CONNECT_TIMEOUT", 5*time.Second); err != nil {
+		return Config{}, err
+	}
+	if cfg.PostgresMaxConnLifetime, err = getDuration("POSTGRES_MAX_CONN_LIFETIME", 0); err != nil {
+		return Config{}, err
+	}
+	if cfg.PostgresMaxConnIdleTime, err = getDuration("POSTGRES_MAX_CONN_IDLE_TIME", 0); err != nil {
+		return Config{}, err
+	}
+	if cfg.PostgresHealthCheckPeriod, err = getDuration("POSTGRES_HEALTHCHECK_PERIOD", time.Minute); err != nil {
+		return Config{}, err
+	}
+	if cfg.AccessTokenTTL, err = getDuration("ACCESS_TOKEN_TTL", 15*time.Minute); err != nil {
+		return Config{}, err
+	}
+	if cfg.RefreshTokenTTL, err = getDuration("REFRESH_TOKEN_TTL", 168*time.Hour); err != nil {
+		return Config{}, err
+	}
+	if cfg.RefreshTokenCleanupInterval, err = getDuration("REFRESH_TOKEN_CLEANUP_INTERVAL", time.Hour); err != nil {
+		return Config{}, err
+	}
+	if cfg.AuthLockoutDuration, err = getDuration("AUTH_LOCKOUT_DURATION", 15*time.Minute); err != nil {
+		return Config{}, err
+	}
+	if cfg.AuthLoginRateWindow, err = getDuration("AUTH_LOGIN_RATE_WINDOW", time.Minute); err != nil {
+		return Config{}, err
+	}
+	if cfg.AuthMaxLoginAttempts, err = getInt("AUTH_MAX_LOGIN_ATTEMPTS", 5); err != nil {
+		return Config{}, err
+	}
+	if cfg.AuthLoginRateLimit, err = getInt("AUTH_LOGIN_RATE_LIMIT", 10); err != nil {
+		return Config{}, err
+	}
+	if cfg.MetricsEnabled, err = getBool("METRICS_ENABLED", true); err != nil {
+		return Config{}, err
+	}
+	if cfg.SwaggerEnabled, err = getBool("SWAGGER_ENABLED", false); err != nil {
+		return Config{}, err
+	}
+	if cfg.TracingEnabled, err = getBool("OTEL_ENABLED", false); err != nil {
+		return Config{}, err
+	}
+	if cfg.OTELExporterInsecure, err = getBool("OTEL_EXPORTER_OTLP_INSECURE", true); err != nil {
+		return Config{}, err
+	}
+	if cfg.OTELSampleRatio, err = getFloat("OTEL_SAMPLE_RATIO", 1.0); err != nil {
+		return Config{}, err
+	}
 
 	if strings.TrimSpace(cfg.HTTPAddr) == "" {
 		return Config{}, fmt.Errorf("HTTP_ADDR is required")
 	}
 	if cfg.CORSAllowCredentials && strings.TrimSpace(cfg.CORSAllowOrigins) == "*" {
 		return Config{}, fmt.Errorf("CORS_ALLOW_CREDENTIALS=true requires CORS_ALLOW_ORIGINS not '*'")
+	}
+	if strings.TrimSpace(cfg.JWTSecret) == "" {
+		return Config{}, fmt.Errorf("JWT_SECRET is required")
+	}
+	if cfg.OTELSampleRatio < 0 || cfg.OTELSampleRatio > 1 {
+		return Config{}, fmt.Errorf("OTEL_SAMPLE_RATIO must be between 0 and 1")
 	}
 
 	return cfg, nil
@@ -167,6 +281,20 @@ func getBool(key string, fallback bool) (bool, error) {
 	parsed, err := strconv.ParseBool(value)
 	if err != nil {
 		return false, fmt.Errorf("invalid %s: %w", key, err)
+	}
+
+	return parsed, nil
+}
+
+func getFloat(key string, fallback float64) (float64, error) {
+	value := strings.TrimSpace(os.Getenv(key))
+	if value == "" {
+		return fallback, nil
+	}
+
+	parsed, err := strconv.ParseFloat(value, 64)
+	if err != nil {
+		return 0, fmt.Errorf("invalid %s: %w", key, err)
 	}
 
 	return parsed, nil

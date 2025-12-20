@@ -3,21 +3,37 @@ package http
 import (
 	"fmt"
 	"runtime/debug"
+	"strings"
 	"time"
 
+	"github.com/gofiber/contrib/otelfiber"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/helmet"
+	"github.com/gofiber/fiber/v2/middleware/monitor"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/gofiber/fiber/v2/middleware/requestid"
 	"github.com/gofiber/fiber/v2/utils"
 	"github.com/mzulfanw/boilerplate-go-fiber/internal/config"
 	"github.com/sirupsen/logrus"
+	"go.opentelemetry.io/otel"
 )
 
 const requestIDKey = "requestid"
 
 func setupMiddlewares(app *fiber.App, cfg config.Config) {
+	if cfg.MetricsEnabled && strings.TrimSpace(cfg.MetricsPath) != "" {
+		app.Get(cfg.MetricsPath, monitor.New(monitor.Config{
+			Title: "Metrics",
+		}))
+	}
+
+	if cfg.TracingEnabled {
+		app.Use(otelfiber.Middleware(
+			otelfiber.WithTracerProvider(otel.GetTracerProvider()),
+		))
+	}
+
 	app.Use(cors.New(cors.Config{
 		AllowOrigins:     cfg.CORSAllowOrigins,
 		AllowMethods:     cfg.CORSAllowMethods,

@@ -5,13 +5,23 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/mzulfanw/boilerplate-go-fiber/internal/app"
 	"github.com/mzulfanw/boilerplate-go-fiber/internal/config"
 	"github.com/mzulfanw/boilerplate-go-fiber/internal/logger"
+	"github.com/mzulfanw/boilerplate-go-fiber/internal/observability"
 	"github.com/sirupsen/logrus"
 )
 
+// @title Boilerplate Go Fiber API
+// @version 0.1.0
+// @description API boilerplate with Go + Fiber.
+// @BasePath /
+// @schemes http
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
 func main() {
 	cfg, err := config.Load()
 	if err != nil {
@@ -19,6 +29,20 @@ func main() {
 	}
 
 	log := logger.Init(cfg)
+
+	shutdownTracing, err := observability.InitTracing(context.Background(), cfg)
+	if err != nil {
+		log.WithError(err).Fatal("failed to initialize tracing")
+	}
+	if shutdownTracing != nil {
+		defer func() {
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+			if err := shutdownTracing(ctx); err != nil {
+				log.WithError(err).Warn("failed to shutdown tracing")
+			}
+		}()
+	}
 
 	application, err := app.NewApp(cfg)
 	if err != nil {

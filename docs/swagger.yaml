@@ -1,0 +1,989 @@
+basePath: /
+definitions:
+  github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.DependencyStatus:
+    properties:
+      error:
+        type: string
+      latency:
+        type: string
+      name:
+        type: string
+      status:
+        type: string
+    type: object
+  github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.ReadinessStatus:
+    properties:
+      app:
+        type: string
+      dependencies:
+        items:
+          $ref: '#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.DependencyStatus'
+        type: array
+      env:
+        type: string
+      status:
+        type: string
+      time:
+        type: string
+      uptime:
+        type: string
+    type: object
+  github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response:
+    properties:
+      code:
+        type: integer
+      data: {}
+      message:
+        type: string
+    type: object
+  github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Status:
+    properties:
+      app:
+        type: string
+      env:
+        type: string
+      status:
+        type: string
+      time:
+        type: string
+      uptime:
+        type: string
+    type: object
+  internal_transport_http_auth.LoginRequest:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    type: object
+  internal_transport_http_auth.LogoutRequest:
+    properties:
+      refresh_token:
+        type: string
+    type: object
+  internal_transport_http_auth.RefreshRequest:
+    properties:
+      refresh_token:
+        type: string
+    type: object
+  internal_transport_http_auth.TokenResponse:
+    properties:
+      access_token:
+        type: string
+      expires_in:
+        type: integer
+      refresh_token:
+        type: string
+      token_type:
+        type: string
+    type: object
+  internal_transport_http_rbac.PermissionRequest:
+    properties:
+      description:
+        type: string
+      name:
+        type: string
+    type: object
+  internal_transport_http_rbac.PermissionResponse:
+    properties:
+      created_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+    type: object
+  internal_transport_http_rbac.RolePermissionsRequest:
+    properties:
+      permission_ids:
+        items:
+          type: string
+        type: array
+    type: object
+  internal_transport_http_rbac.RolePermissionsResponse:
+    properties:
+      permissions:
+        items:
+          $ref: '#/definitions/internal_transport_http_rbac.PermissionResponse'
+        type: array
+      role_id:
+        type: string
+    type: object
+  internal_transport_http_rbac.RoleRequest:
+    properties:
+      description:
+        type: string
+      name:
+        type: string
+    type: object
+  internal_transport_http_rbac.RoleResponse:
+    properties:
+      created_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+    type: object
+  internal_transport_http_user.CreateUserRequest:
+    properties:
+      email:
+        type: string
+      is_active:
+        type: boolean
+      password:
+        type: string
+      role_ids:
+        items:
+          type: string
+        type: array
+    type: object
+  internal_transport_http_user.RoleResponse:
+    properties:
+      created_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+    type: object
+  internal_transport_http_user.UpdateUserRequest:
+    properties:
+      email:
+        type: string
+      is_active:
+        type: boolean
+      password:
+        type: string
+    type: object
+  internal_transport_http_user.UserResponse:
+    properties:
+      created_at:
+        type: string
+      email:
+        type: string
+      id:
+        type: string
+      is_active:
+        type: boolean
+      updated_at:
+        type: string
+    type: object
+  internal_transport_http_user.UserRolesRequest:
+    properties:
+      role_ids:
+        items:
+          type: string
+        type: array
+    type: object
+  internal_transport_http_user.UserRolesResponse:
+    properties:
+      roles:
+        items:
+          $ref: '#/definitions/internal_transport_http_user.RoleResponse'
+        type: array
+      user_id:
+        type: string
+    type: object
+info:
+  contact: {}
+  description: API boilerplate with Go + Fiber.
+  title: Boilerplate Go Fiber API
+  version: 0.1.0
+paths:
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Login payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/internal_transport_http_auth.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_transport_http_auth.TokenResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response'
+        "423":
+          description: Locked
+          schema:
+            $ref: '#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response'
+      summary: Login
+      tags:
+      - Auth
+  /auth/logout:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Logout payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/internal_transport_http_auth.LogoutRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response'
+      summary: Logout
+      tags:
+      - Auth
+  /auth/refresh:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Refresh token payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/internal_transport_http_auth.RefreshRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_transport_http_auth.TokenResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response'
+      summary: Refresh access token
+      tags:
+      - Auth
+  /health:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Status'
+              type: object
+      summary: Liveness check
+      tags:
+      - Health
+  /health/liveness:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Status'
+              type: object
+      summary: Liveness check
+      tags:
+      - Health
+  /health/readiness:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.ReadinessStatus'
+              type: object
+        "503":
+          description: Service Unavailable
+          schema:
+            $ref: '#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response'
+      summary: Readiness check
+      tags:
+      - Health
+  /rbac/permissions:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/internal_transport_http_rbac.PermissionResponse'
+                  type: array
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response'
+      security:
+      - BearerAuth: []
+      summary: List permissions
+      tags:
+      - RBAC
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Create permission payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/internal_transport_http_rbac.PermissionRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_transport_http_rbac.PermissionResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response'
+      security:
+      - BearerAuth: []
+      summary: Create permission
+      tags:
+      - RBAC
+  /rbac/permissions/{id}:
+    delete:
+      parameters:
+      - description: Permission ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response'
+      security:
+      - BearerAuth: []
+      summary: Delete permission
+      tags:
+      - RBAC
+    get:
+      parameters:
+      - description: Permission ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_transport_http_rbac.PermissionResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response'
+      security:
+      - BearerAuth: []
+      summary: Get permission
+      tags:
+      - RBAC
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Permission ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Update permission payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/internal_transport_http_rbac.PermissionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_transport_http_rbac.PermissionResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response'
+      security:
+      - BearerAuth: []
+      summary: Update permission
+      tags:
+      - RBAC
+  /rbac/roles:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/internal_transport_http_rbac.RoleResponse'
+                  type: array
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response'
+      security:
+      - BearerAuth: []
+      summary: List roles
+      tags:
+      - RBAC
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Create role payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/internal_transport_http_rbac.RoleRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_transport_http_rbac.RoleResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response'
+      security:
+      - BearerAuth: []
+      summary: Create role
+      tags:
+      - RBAC
+  /rbac/roles/{id}:
+    delete:
+      parameters:
+      - description: Role ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response'
+      security:
+      - BearerAuth: []
+      summary: Delete role
+      tags:
+      - RBAC
+    get:
+      parameters:
+      - description: Role ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_transport_http_rbac.RoleResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response'
+      security:
+      - BearerAuth: []
+      summary: Get role
+      tags:
+      - RBAC
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Role ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Update role payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/internal_transport_http_rbac.RoleRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_transport_http_rbac.RoleResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response'
+      security:
+      - BearerAuth: []
+      summary: Update role
+      tags:
+      - RBAC
+  /rbac/roles/{id}/permissions:
+    get:
+      parameters:
+      - description: Role ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_transport_http_rbac.RolePermissionsResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response'
+      security:
+      - BearerAuth: []
+      summary: List role permissions
+      tags:
+      - RBAC
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Role ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Role permissions payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/internal_transport_http_rbac.RolePermissionsRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_transport_http_rbac.RolePermissionsResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response'
+      security:
+      - BearerAuth: []
+      summary: Replace role permissions
+      tags:
+      - RBAC
+  /users:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/internal_transport_http_user.UserResponse'
+                  type: array
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response'
+      security:
+      - BearerAuth: []
+      summary: List users
+      tags:
+      - Users
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Create user payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/internal_transport_http_user.CreateUserRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_transport_http_user.UserResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response'
+      security:
+      - BearerAuth: []
+      summary: Create user
+      tags:
+      - Users
+  /users/{id}:
+    delete:
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response'
+      security:
+      - BearerAuth: []
+      summary: Delete user
+      tags:
+      - Users
+    get:
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_transport_http_user.UserResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response'
+      security:
+      - BearerAuth: []
+      summary: Get user by id
+      tags:
+      - Users
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Update user payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/internal_transport_http_user.UpdateUserRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_transport_http_user.UserResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response'
+      security:
+      - BearerAuth: []
+      summary: Update user
+      tags:
+      - Users
+  /users/{id}/roles:
+    get:
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_transport_http_user.UserRolesResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response'
+      security:
+      - BearerAuth: []
+      summary: List user roles
+      tags:
+      - Users
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Role ids
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/internal_transport_http_user.UserRolesRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_transport_http_user.UserRolesResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response'
+      security:
+      - BearerAuth: []
+      summary: Replace user roles
+      tags:
+      - Users
+schemes:
+- http
+securityDefinitions:
+  BearerAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
