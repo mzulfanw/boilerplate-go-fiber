@@ -8,6 +8,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	rbacdomain "github.com/mzulfanw/boilerplate-go-fiber/internal/domain/rbac"
 	rbacusecase "github.com/mzulfanw/boilerplate-go-fiber/internal/service/rbac"
+	"github.com/mzulfanw/boilerplate-go-fiber/internal/transport/http/query"
 	"github.com/mzulfanw/boilerplate-go-fiber/internal/transport/http/response"
 	"github.com/mzulfanw/boilerplate-go-fiber/internal/transport/http/validation"
 )
@@ -25,11 +26,31 @@ func NewHandler(service *rbacusecase.Service) *Handler {
 // @Tags RBAC
 // @Security BearerAuth
 // @Produce json
-// @Success 200 {object} response.Response{data=[]RoleResponse}
+// @Param page query int false "Page number"
+// @Param per_page query int false "Items per page"
+// @Param search query string false "Search by name or description"
+// @Param created_from query string false "Created date from (RFC3339 or YYYY-MM-DD)"
+// @Param created_to query string false "Created date to (RFC3339 or YYYY-MM-DD)"
+// @Success 200 {object} response.Response{data=RoleListResponse}
 // @Failure 401 {object} response.Response
 // @Router /rbac/roles [get]
 func (h *Handler) ListRoles(c *fiber.Ctx) error {
-	roles, err := h.service.ListRoles(c.UserContext())
+	pagination, err := query.ParsePagination(c)
+	if err != nil {
+		return err
+	}
+
+	search := query.ParseSearch(c, "search")
+	createdFrom, createdTo, err := parseCreatedDateRange(c)
+	if err != nil {
+		return err
+	}
+	result, err := h.service.ListRoles(c.UserContext(), rbacdomain.ListFilterRole{
+		Search:      search,
+		CreatedFrom: createdFrom,
+		CreatedTo:   createdTo,
+		Pagination:  pagination,
+	})
 	if err != nil {
 		return mapRBACError(err)
 	}
@@ -37,7 +58,10 @@ func (h *Handler) ListRoles(c *fiber.Ctx) error {
 	resp := response.Response{
 		Code:    fiber.StatusOK,
 		Message: "ok",
-		Data:    mapRoles(roles),
+		Data: RoleListResponse{
+			Items: mapRoles(result.Role),
+			Meta:  response.NewPageMeta(pagination.Page, pagination.PerPage, result.Total),
+		},
 	}
 	return c.Status(resp.Code).JSON(resp)
 }
@@ -171,19 +195,40 @@ func (h *Handler) DeleteRole(c *fiber.Ctx) error {
 // @Tags RBAC
 // @Security BearerAuth
 // @Produce json
-// @Success 200 {object} response.Response{data=[]PermissionResponse}
+// @Param page query int false "Page number"
+// @Param per_page query int false "Items per page"
+// @Param search query string false "Search by name or description"
+// @Param created_from query string false "Created date from (RFC3339 or YYYY-MM-DD)"
+// @Param created_to query string false "Created date to (RFC3339 or YYYY-MM-DD)"
+// @Success 200 {object} response.Response{data=PermissionListResponse}
 // @Failure 401 {object} response.Response
 // @Router /rbac/permissions [get]
 func (h *Handler) ListPermissions(c *fiber.Ctx) error {
-	permissions, err := h.service.ListPermissions(c.UserContext())
+	pagination, err := query.ParsePagination(c)
+	if err != nil {
+		return err
+	}
+	search := query.ParseSearch(c, "search")
+	createdFrom, createdTo, err := parseCreatedDateRange(c)
+	if err != nil {
+		return err
+	}
+	result, err := h.service.ListPermissions(c.UserContext(), rbacdomain.ListFilterPermission{
+		Search:      search,
+		CreatedFrom: createdFrom,
+		CreatedTo:   createdTo,
+		Pagination:  pagination,
+	})
 	if err != nil {
 		return mapRBACError(err)
 	}
-
 	resp := response.Response{
 		Code:    fiber.StatusOK,
 		Message: "ok",
-		Data:    mapPermissions(permissions),
+		Data: PermissionListResponse{
+			Items: mapPermissions(result.Permission),
+			Meta:  response.NewPageMeta(pagination.Page, pagination.PerPage, result.Total),
+		},
 	}
 	return c.Status(resp.Code).JSON(resp)
 }
@@ -398,6 +443,73 @@ func mapRBACError(err error) error {
 	default:
 		return err
 	}
+}
+
+func parseCreatedDateRange(c *fiber.Ctx) (*time.Time, *time.Time, error) {
+	fromRaw := strings.TrimSpace(c.Query("created_from"))
+	toRaw := strings.TrimSpace(c.Query("created_to"))
+	if fromRaw == "" && toRaw == "" {
+		return nil, nil, nil
+	}
+
+	var createdFrom *time.Time
+	if fromRaw != "" {
+		from, hasTime, err := parseDateQuery(fromRaw, "created_from")
+		if err != nil {
+			return nil, nil, err
+		}
+		if !hasTime {
+			from = startOfDayUTC(from)
+		} else {
+			from = from.UTC()
+		}
+		createdFrom = &from
+	}
+
+	var createdTo *time.Time
+	if toRaw != "" {
+		to, hasTime, err := parseDateQuery(toRaw, "created_to")
+		if err != nil {
+			return nil, nil, err
+		}
+		if !hasTime {
+			to = endOfDayUTC(to)
+		} else {
+			to = to.UTC()
+		}
+		createdTo = &to
+	}
+
+	if createdFrom != nil && createdTo != nil && createdFrom.After(*createdTo) {
+		return nil, nil, fiber.NewError(fiber.StatusBadRequest, "created_from must be before or equal to created_to")
+	}
+
+	return createdFrom, createdTo, nil
+}
+
+func parseDateQuery(raw, label string) (time.Time, bool, error) {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return time.Time{}, false, nil
+	}
+
+	if parsed, err := time.Parse(time.RFC3339Nano, raw); err == nil {
+		return parsed, true, nil
+	}
+
+	if parsed, err := time.Parse("2006-01-02", raw); err == nil {
+		return parsed, false, nil
+	}
+
+	return time.Time{}, false, fiber.NewError(fiber.StatusBadRequest, label+" must be RFC3339 or YYYY-MM-DD")
+}
+
+func startOfDayUTC(value time.Time) time.Time {
+	return time.Date(value.Year(), value.Month(), value.Day(), 0, 0, 0, 0, time.UTC)
+}
+
+func endOfDayUTC(value time.Time) time.Time {
+	return startOfDayUTC(value).Add(24*time.Hour - time.Nanosecond)
 }
 
 func mapRoles(roles []rbacdomain.Role) []RoleResponse {

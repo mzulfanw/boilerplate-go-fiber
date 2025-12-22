@@ -20,8 +20,9 @@ func NewService(repo Repository) (*Service, error) {
 	return &Service{repo: repo}, nil
 }
 
-func (s *Service) ListRoles(ctx context.Context) ([]rbacdomain.Role, error) {
-	return s.repo.ListRoles(ctx)
+func (s *Service) ListRoles(ctx context.Context, filter rbacdomain.ListFilterRole) (rbacdomain.ListRole, error) {
+	filter.Search = strings.TrimSpace(filter.Search)
+	return s.repo.ListRoles(ctx, filter)
 }
 
 func (s *Service) GetRole(ctx context.Context, id string) (rbacdomain.Role, error) {
@@ -57,8 +58,9 @@ func (s *Service) DeleteRole(ctx context.Context, id string) error {
 	return s.repo.DeleteRole(ctx, id)
 }
 
-func (s *Service) ListPermissions(ctx context.Context) ([]rbacdomain.Permission, error) {
-	return s.repo.ListPermissions(ctx)
+func (s *Service) ListPermissions(ctx context.Context, filter rbacdomain.ListFilterPermission) (rbacdomain.ListPermission, error) {
+	filter.Search = strings.TrimSpace(filter.Search)
+	return s.repo.ListPermissions(ctx, filter)
 }
 
 func (s *Service) GetPermission(ctx context.Context, id string) (rbacdomain.Permission, error) {

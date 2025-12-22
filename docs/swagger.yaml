@@ -205,6 +205,15 @@ definitions:
     - price
     - quantity
     type: object
+  internal_transport_http_rbac.PermissionListResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/internal_transport_http_rbac.PermissionResponse'
+        type: array
+      meta:
+        $ref: '#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.PageMeta'
+    type: object
   internal_transport_http_rbac.PermissionRequest:
     properties:
       description:
@@ -224,6 +233,15 @@ definitions:
         type: string
       name:
         type: string
+    type: object
+  internal_transport_http_rbac.RoleListResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/internal_transport_http_rbac.RoleResponse'
+        type: array
+      meta:
+        $ref: '#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.PageMeta'
     type: object
   internal_transport_http_rbac.RolePermissionsRequest:
     properties:
@@ -1528,6 +1546,27 @@ paths:
       - Payment
   /rbac/permissions:
     get:
+      parameters:
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Items per page
+        in: query
+        name: per_page
+        type: integer
+      - description: Search by name or description
+        in: query
+        name: search
+        type: string
+      - description: Created date from (RFC3339 or YYYY-MM-DD)
+        in: query
+        name: created_from
+        type: string
+      - description: Created date to (RFC3339 or YYYY-MM-DD)
+        in: query
+        name: created_to
+        type: string
       produces:
       - application/json
       responses:
@@ -1538,9 +1577,7 @@ paths:
             - $ref: '#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response'
             - properties:
                 data:
-                  items:
-                    $ref: '#/definitions/internal_transport_http_rbac.PermissionResponse'
-                  type: array
+                  $ref: '#/definitions/internal_transport_http_rbac.PermissionListResponse'
               type: object
         "401":
           description: Unauthorized
@@ -1688,6 +1725,27 @@ paths:
       - RBAC
   /rbac/roles:
     get:
+      parameters:
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Items per page
+        in: query
+        name: per_page
+        type: integer
+      - description: Search by name or description
+        in: query
+        name: search
+        type: string
+      - description: Created date from (RFC3339 or YYYY-MM-DD)
+        in: query
+        name: created_from
+        type: string
+      - description: Created date to (RFC3339 or YYYY-MM-DD)
+        in: query
+        name: created_to
+        type: string
       produces:
       - application/json
       responses:
@@ -1698,9 +1756,7 @@ paths:
             - $ref: '#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.Response'
             - properties:
                 data:
-                  items:
-                    $ref: '#/definitions/internal_transport_http_rbac.RoleResponse'
-                  type: array
+                  $ref: '#/definitions/internal_transport_http_rbac.RoleListResponse'
               type: object
         "401":
           description: Unauthorized

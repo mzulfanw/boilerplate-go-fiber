@@ -335,8 +335,14 @@ SQL migrations are in `migrations/` (each has `.up.sql` and `.down.sql`):
 - `0003_seed_rbac_management.up.sql`
 - `0004_seed_user_role_permissions.up.sql`
 - `0005_auth_security.up.sql`
+- `0006_seed_admin_user.up.sql`
 
 You can run them using your preferred tool (e.g. `psql`, `golang-migrate`).
+
+Default admin user (after applying migrations):
+
+- Email: `admin@boiler.com`
+- Password: `abcd5dasar`
 
 ### Migrate Step by Step (Makefile)
 

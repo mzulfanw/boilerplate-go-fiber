@@ -7,13 +7,13 @@ import (
 )
 
 type Repository interface {
-	ListRoles(ctx context.Context) ([]rbacdomain.Role, error)
+	ListRoles(ctx context.Context, filter rbacdomain.ListFilterRole) (rbacdomain.ListRole, error)
 	GetRole(ctx context.Context, id string) (rbacdomain.Role, error)
 	CreateRole(ctx context.Context, name, description string) (rbacdomain.Role, error)
 	UpdateRole(ctx context.Context, id, name, description string) (rbacdomain.Role, error)
 	DeleteRole(ctx context.Context, id string) error
 
-	ListPermissions(ctx context.Context) ([]rbacdomain.Permission, error)
+	ListPermissions(ctx context.Context, filter rbacdomain.ListFilterPermission) (rbacdomain.ListPermission, error)
 	GetPermission(ctx context.Context, id string) (rbacdomain.Permission, error)
 	CreatePermission(ctx context.Context, name, description string) (rbacdomain.Permission, error)
 	UpdatePermission(ctx context.Context, id, name, description string) (rbacdomain.Permission, error)

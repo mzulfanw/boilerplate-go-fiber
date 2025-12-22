@@ -1,5 +1,7 @@
 package rbac
 
+import "github.com/mzulfanw/boilerplate-go-fiber/internal/transport/http/response"
+
 type RoleRequest struct {
 	Name        string `json:"name" validate:"required,notblank"`
 	Description string `json:"description"`
@@ -31,4 +33,14 @@ type PermissionResponse struct {
 type RolePermissionsResponse struct {
 	RoleID      string               `json:"role_id"`
 	Permissions []PermissionResponse `json:"permissions"`
+}
+
+type RoleListResponse struct {
+	Items []RoleResponse `json:"items"`
+	Meta  response.PageMeta `json:"meta"`
+}
+
+type PermissionListResponse struct {
+	Items []PermissionResponse `json:"items"`
+	Meta  response.PageMeta    `json:"meta"`
 }

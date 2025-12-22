@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/jackc/pgx/v5"
@@ -19,16 +20,40 @@ func NewRBACRepository(pool *pgxpool.Pool) *RBACRepository {
 	return &RBACRepository{pool: pool}
 }
 
-func (r *RBACRepository) ListRoles(ctx context.Context) ([]rbacdomain.Role, error) {
-	const query = `
+func (r *RBACRepository) ListRoles(ctx context.Context, filter rbacdomain.ListFilterRole) (rbacdomain.ListRole, error) {
+	where, args := buildRolesListFilter(filter)
+
+	countQuery := `SELECT COUNT(*) FROM roles`
+	if where != "" {
+		countQuery += " " + where
+	}
+
+	var total int
+	if err := r.pool.QueryRow(ctx, countQuery, args...).Scan(&total); err != nil {
+		return rbacdomain.ListRole{}, err
+	}
+
+	limit := filter.Pagination.Limit()
+	if limit <= 0 {
+		limit = 20
+	}
+	offset := filter.Pagination.Offset()
+	if offset < 0 {
+		offset = 0
+	}
+
+	listQuery := fmt.Sprintf(`
 		SELECT id::text, name, COALESCE(description, ''), created_at
 		FROM roles
+		%s
 		ORDER BY name
-	`
+		LIMIT $%d OFFSET $%d
+	`, where, len(args)+1, len(args)+2)
 
-	rows, err := r.pool.Query(ctx, query)
+	listArgs := append(args, limit, offset)
+	rows, err := r.pool.Query(ctx, listQuery, listArgs...)
 	if err != nil {
-		return nil, err
+		return rbacdomain.ListRole{}, err
 	}
 	defer rows.Close()
 
@@ -36,11 +61,43 @@ func (r *RBACRepository) ListRoles(ctx context.Context) ([]rbacdomain.Role, erro
 	for rows.Next() {
 		var role rbacdomain.Role
 		if err := rows.Scan(&role.ID, &role.Name, &role.Description, &role.CreatedAt); err != nil {
-			return nil, err
+			return rbacdomain.ListRole{}, err
 		}
 		roles = append(roles, role)
 	}
-	return roles, rows.Err()
+	return rbacdomain.ListRole{
+		Role:  roles,
+		Total: total,
+	}, nil
+}
+
+func buildRolesListFilter(filter rbacdomain.ListFilterRole) (string, []any) {
+	conditions := make([]string, 0, 2)
+	args := make([]any, 0, 2)
+
+	if search := strings.TrimSpace(filter.Search); search != "" {
+		args = append(args, "%"+search+"%")
+		index := len(args)
+		conditions = append(conditions, fmt.Sprintf("(name ILIKE $%d OR description ILIKE $%d)", index, index))
+	}
+
+	if filter.CreatedFrom != nil {
+		args = append(args, *filter.CreatedFrom)
+		index := len(args)
+		conditions = append(conditions, fmt.Sprintf("created_at >= $%d", index))
+	}
+
+	if filter.CreatedTo != nil {
+		args = append(args, *filter.CreatedTo)
+		index := len(args)
+		conditions = append(conditions, fmt.Sprintf("created_at <= $%d", index))
+	}
+
+	if len(conditions) == 0 {
+		return "", args
+	}
+
+	return "WHERE " + strings.Join(conditions, " AND "), args
 }
 
 func (r *RBACRepository) GetRole(ctx context.Context, id string) (rbacdomain.Role, error) {
@@ -113,16 +170,40 @@ func (r *RBACRepository) DeleteRole(ctx context.Context, id string) error {
 	return nil
 }
 
-func (r *RBACRepository) ListPermissions(ctx context.Context) ([]rbacdomain.Permission, error) {
-	const query = `
+func (r *RBACRepository) ListPermissions(ctx context.Context, filter rbacdomain.ListFilterPermission) (rbacdomain.ListPermission, error) {
+	where, args := buildPermissionFilters(filter)
+
+	countQuery := `SELECT COUNT(*) FROM permissions`
+	if where != "" {
+		countQuery += " " + where
+	}
+
+	var total int
+	if err := r.pool.QueryRow(ctx, countQuery, args...).Scan(&total); err != nil {
+		return rbacdomain.ListPermission{}, err
+	}
+
+	limit := filter.Pagination.Limit()
+	if limit <= 0 {
+		limit = 20
+	}
+	offset := filter.Pagination.Offset()
+	if offset < 0 {
+		offset = 0
+	}
+
+	listQuery := fmt.Sprintf(`
 		SELECT id::text, name, COALESCE(description, ''), created_at
 		FROM permissions
+		%s
 		ORDER BY name
-	`
+		LIMIT $%d OFFSET $%d
+	`, where, len(args)+1, len(args)+2)
 
-	rows, err := r.pool.Query(ctx, query)
+	listArgs := append(args, limit, offset)
+	rows, err := r.pool.Query(ctx, listQuery, listArgs...)
 	if err != nil {
-		return nil, err
+		return rbacdomain.ListPermission{}, err
 	}
 	defer rows.Close()
 
@@ -130,11 +211,43 @@ func (r *RBACRepository) ListPermissions(ctx context.Context) ([]rbacdomain.Perm
 	for rows.Next() {
 		var permission rbacdomain.Permission
 		if err := rows.Scan(&permission.ID, &permission.Name, &permission.Description, &permission.CreatedAt); err != nil {
-			return nil, err
+			return rbacdomain.ListPermission{}, err
 		}
 		permissions = append(permissions, permission)
 	}
-	return permissions, rows.Err()
+	return rbacdomain.ListPermission{
+		Permission: permissions,
+		Total:      total,
+	}, nil
+}
+
+func buildPermissionFilters(filter rbacdomain.ListFilterPermission) (string, []any) {
+	conditions := make([]string, 0, 2)
+	args := make([]any, 0, 2)
+
+	if search := strings.TrimSpace(filter.Search); search != "" {
+		args = append(args, "%"+search+"%")
+		index := len(args)
+		conditions = append(conditions, fmt.Sprintf("(name ILIKE $%d OR description ILIKE $%d)", index, index))
+	}
+
+	if filter.CreatedFrom != nil {
+		args = append(args, *filter.CreatedFrom)
+		index := len(args)
+		conditions = append(conditions, fmt.Sprintf("created_at >= $%d", index))
+	}
+
+	if filter.CreatedTo != nil {
+		args = append(args, *filter.CreatedTo)
+		index := len(args)
+		conditions = append(conditions, fmt.Sprintf("created_at <= $%d", index))
+	}
+
+	if len(conditions) == 0 {
+		return "", args
+	}
+
+	return "WHERE " + strings.Join(conditions, " AND "), args
 }
 
 func (r *RBACRepository) GetPermission(ctx context.Context, id string) (rbacdomain.Permission, error) {

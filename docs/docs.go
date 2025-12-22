@@ -662,6 +662,38 @@ const docTemplate = `{
                     "RBAC"
                 ],
                 "summary": "List permissions",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Page number",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Items per page",
+                        "name": "per_page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Search by name or description",
+                        "name": "search",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Created date from (RFC3339 or YYYY-MM-DD)",
+                        "name": "created_from",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Created date to (RFC3339 or YYYY-MM-DD)",
+                        "name": "created_to",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -674,10 +706,7 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "type": "array",
-                                            "items": {
-                                                "$ref": "#/definitions/internal_transport_http_rbac.PermissionResponse"
-                                            }
+                                            "$ref": "#/definitions/internal_transport_http_rbac.PermissionListResponse"
                                         }
                                     }
                                 }
@@ -934,6 +963,38 @@ const docTemplate = `{
                     "RBAC"
                 ],
                 "summary": "List roles",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Page number",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Items per page",
+                        "name": "per_page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Search by name or description",
+                        "name": "search",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Created date from (RFC3339 or YYYY-MM-DD)",
+                        "name": "created_from",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Created date to (RFC3339 or YYYY-MM-DD)",
+                        "name": "created_to",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -946,10 +1007,7 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "type": "array",
-                                            "items": {
-                                                "$ref": "#/definitions/internal_transport_http_rbac.RoleResponse"
-                                            }
+                                            "$ref": "#/definitions/internal_transport_http_rbac.RoleListResponse"
                                         }
                                     }
                                 }
@@ -2052,6 +2110,20 @@ const docTemplate = `{
                 }
             }
         },
+        "internal_transport_http_rbac.PermissionListResponse": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/internal_transport_http_rbac.PermissionResponse"
+                    }
+                },
+                "meta": {
+                    "$ref": "#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.PageMeta"
+                }
+            }
+        },
         "internal_transport_http_rbac.PermissionRequest": {
             "type": "object",
             "required": [
@@ -2080,6 +2152,20 @@ const docTemplate = `{
                 },
                 "name": {
                     "type": "string"
+                }
+            }
+        },
+        "internal_transport_http_rbac.RoleListResponse": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/internal_transport_http_rbac.RoleResponse"
+                    }
+                },
+                "meta": {
+                    "$ref": "#/definitions/github_com_mzulfanw_boilerplate-go-fiber_internal_transport_http_response.PageMeta"
                 }
             }
         },
