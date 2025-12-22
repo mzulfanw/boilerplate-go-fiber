@@ -57,7 +57,7 @@ func (s *Service) CreateInvoice(ctx context.Context, input paymentdomain.CreateI
 	idempotencyKey := strings.TrimSpace(input.IdempotencyKey)
 	if idempotencyKey != "" && s.cache != nil {
 		cacheKey = buildIdempotencyKey(idempotencyKey, externalID)
-		cached, err := s.cache.GetString(cacheKey)
+		cached, err := s.cache.GetString(ctx, cacheKey)
 		if err == nil {
 			if cached == idempotencyPendingValue {
 				return invoice.Invoice{}, false, paymentdomain.ErrIdempotencyInProgress
@@ -72,7 +72,7 @@ func (s *Service) CreateInvoice(ctx context.Context, input paymentdomain.CreateI
 			return invoice.Invoice{}, false, err
 		}
 
-		acquired, err := s.cache.SetIfNotExists(cacheKey, idempotencyPendingValue, idempotencyPendingTTL)
+		acquired, err := s.cache.SetIfNotExists(ctx, cacheKey, idempotencyPendingValue, idempotencyPendingTTL)
 		if err != nil {
 			return invoice.Invoice{}, false, err
 		}
@@ -153,13 +153,13 @@ func (s *Service) CreateInvoice(ctx context.Context, input paymentdomain.CreateI
 	createdInvoice, err := s.xenditClient.CreateInvoice(ctx, *request)
 	if err != nil {
 		if cacheKey != "" && s.cache != nil {
-			_ = s.cache.Delete(cacheKey)
+			_ = s.cache.Delete(ctx, cacheKey)
 		}
 		return invoice.Invoice{}, false, err
 	}
 
 	if cacheKey != "" && s.cache != nil {
-		if err := s.cache.SetWithTTL(cacheKey, createdInvoice.Id, idempotencyTTL); err != nil {
+		if err := s.cache.SetWithTTL(ctx, cacheKey, createdInvoice.Id, idempotencyTTL); err != nil {
 			logrus.WithFields(logrus.Fields{
 				"cache_key":   cacheKey,
 				"invoice_id":  createdInvoice.Id,
@@ -192,7 +192,7 @@ func (s *Service) HandleInvoiceWebhook(ctx context.Context, payload invoice.Invo
 
 	if s.cache != nil {
 		key := buildWebhookDedupKey(payload, payloadHash)
-		acquired, err := s.cache.SetIfNotExists(key, time.Now().UTC().Format(time.RFC3339Nano), webhookDedupTTL)
+		acquired, err := s.cache.SetIfNotExists(ctx, key, time.Now().UTC().Format(time.RFC3339Nano), webhookDedupTTL)
 		if err != nil {
 			return err
 		}

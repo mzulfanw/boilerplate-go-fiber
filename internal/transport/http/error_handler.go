@@ -4,6 +4,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/utils"
 	"github.com/mzulfanw/boilerplate-go-fiber/internal/transport/http/response"
+	"github.com/sirupsen/logrus"
 )
 
 func errorHandler() fiber.ErrorHandler {
@@ -20,7 +21,7 @@ func errorHandler() fiber.ErrorHandler {
 					message = utils.StatusMessage(code)
 				}
 			} else {
-				message = err.Error()
+				logrus.WithError(err).WithField("request_id", getRequestID(c)).Error("request failed")
 			}
 		}
 

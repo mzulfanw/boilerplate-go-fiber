@@ -14,6 +14,16 @@ import (
 var ErrQueueEmpty = errors.New("email queue is empty")
 var ErrInvalidPayload = errors.New("email queue payload is invalid")
 
+const retryLuaScript = `
+redis.call('ZADD', KEYS[2], ARGV[3], ARGV[2])
+return redis.call('LREM', KEYS[1], 1, ARGV[1])
+`
+
+const deadLetterLuaScript = `
+redis.call('LPUSH', KEYS[2], ARGV[2])
+return redis.call('LREM', KEYS[1], 1, ARGV[1])
+`
+
 type Queue interface {
 	Enqueue(ctx context.Context, job Job) error
 	Reserve(ctx context.Context, timeout time.Duration) (Job, error)
@@ -61,7 +71,7 @@ func (q *RedisQueue) Enqueue(ctx context.Context, job Job) error {
 		return fmt.Errorf("email queue: marshal job: %w", err)
 	}
 
-	_, err = q.cache.LPush(q.pendingKey, string(payload))
+	_, err = q.cache.LPush(ctx, q.pendingKey, string(payload))
 	return err
 }
 
@@ -70,7 +80,7 @@ func (q *RedisQueue) Reserve(ctx context.Context, timeout time.Duration) (Job, e
 		return Job{}, errors.New("email queue: cache is nil")
 	}
 
-	raw, err := q.cache.BRPopLPush(q.pendingKey, q.processingKey, timeout)
+	raw, err := q.cache.BRPopLPush(ctx, q.pendingKey, q.processingKey, timeout)
 	if err != nil {
 		if errors.Is(err, redisinfra.ErrKeyNotFound) {
 			return Job{}, ErrQueueEmpty
@@ -95,7 +105,7 @@ func (q *RedisQueue) Ack(ctx context.Context, job Job) error {
 		return errors.New("email queue: empty job payload")
 	}
 
-	_, err := q.cache.LRem(q.processingKey, 1, job.Raw)
+	_, err := q.cache.LRem(ctx, q.processingKey, 1, job.Raw)
 	return err
 }
 
@@ -107,21 +117,13 @@ func (q *RedisQueue) Retry(ctx context.Context, job Job, delay time.Duration) er
 		return errors.New("email queue: empty job payload")
 	}
 
-	_, err := q.cache.LRem(q.processingKey, 1, job.Raw)
-	if err != nil {
-		return err
-	}
-
 	payload, err := json.Marshal(job)
 	if err != nil {
 		return fmt.Errorf("email queue: marshal retry job: %w", err)
 	}
 
 	score := float64(time.Now().Add(delay).Unix())
-	_, err = q.cache.ZAdd(q.retryKey, redisinfra.ZMember{
-		Score:  score,
-		Member: string(payload),
-	})
+	_, err = q.cache.Eval(ctx, retryLuaScript, []string{q.processingKey, q.retryKey}, job.Raw, string(payload), score)
 	return err
 }
 
@@ -133,11 +135,6 @@ func (q *RedisQueue) DeadLetter(ctx context.Context, job Job, reason string) err
 		return errors.New("email queue: empty job payload")
 	}
 
-	_, err := q.cache.LRem(q.processingKey, 1, job.Raw)
-	if err != nil {
-		return err
-	}
-
 	job.LastError = reason
 	job.UpdatedAt = time.Now().UTC()
 	payload, err := json.Marshal(job)
@@ -145,7 +142,7 @@ func (q *RedisQueue) DeadLetter(ctx context.Context, job Job, reason string) err
 		return fmt.Errorf("email queue: marshal dead-letter job: %w", err)
 	}
 
-	_, err = q.cache.LPush(q.deadKey, string(payload))
+	_, err = q.cache.Eval(ctx, deadLetterLuaScript, []string{q.processingKey, q.deadKey}, job.Raw, string(payload))
 	return err
 }
 
@@ -155,7 +152,7 @@ func (q *RedisQueue) RequeueDue(ctx context.Context, limit int64) (int, error) {
 	}
 
 	maxScore := fmt.Sprintf("%d", time.Now().Unix())
-	items, err := q.cache.ZRangeByScore(q.retryKey, "-inf", maxScore, limit)
+	items, err := q.cache.ZRangeByScore(ctx, q.retryKey, "-inf", maxScore, limit)
 	if err != nil {
 		return 0, err
 	}
@@ -169,10 +166,10 @@ func (q *RedisQueue) RequeueDue(ctx context.Context, limit int64) (int, error) {
 		if item == "" {
 			continue
 		}
-		if _, err := q.cache.ZRem(q.retryKey, item); err != nil {
+		if _, err := q.cache.ZRem(ctx, q.retryKey, item); err != nil {
 			return moved, err
 		}
-		if _, err := q.cache.LPush(q.pendingKey, item); err != nil {
+		if _, err := q.cache.LPush(ctx, q.pendingKey, item); err != nil {
 			return moved, err
 		}
 		moved++
@@ -186,7 +183,7 @@ func (q *RedisQueue) RecoverInFlight(ctx context.Context) (int, error) {
 		return 0, errors.New("email queue: cache is nil")
 	}
 
-	items, err := q.cache.LRange(q.processingKey, 0, -1)
+	items, err := q.cache.LRange(ctx, q.processingKey, 0, -1)
 	if err != nil {
 		return 0, err
 	}
@@ -198,11 +195,11 @@ func (q *RedisQueue) RecoverInFlight(ctx context.Context) (int, error) {
 		if item == "" {
 			continue
 		}
-		if _, err := q.cache.LPush(q.pendingKey, item); err != nil {
+		if _, err := q.cache.LPush(ctx, q.pendingKey, item); err != nil {
 			return 0, err
 		}
 	}
-	if err := q.cache.Delete(q.processingKey); err != nil {
+	if err := q.cache.Delete(ctx, q.processingKey); err != nil {
 		return 0, err
 	}
 

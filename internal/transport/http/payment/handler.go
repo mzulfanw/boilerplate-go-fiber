@@ -271,7 +271,7 @@ func mapPaymentError(err error) error {
 
 func (h *Handler) verifyWebhookToken(c *fiber.Ctx) error {
 	if h == nil || h.webhookToken == "" {
-		return nil
+		return fiber.NewError(fiber.StatusInternalServerError, "webhook token not configured")
 	}
 
 	token := strings.TrimSpace(c.Get("x-callback-token"))

@@ -28,6 +28,8 @@ var (
 	ErrInvalidPassword    = errors.New("invalid password")
 )
 
+const passwordHashCost = 12
+
 type Service struct {
 	repo             Repository
 	tokenManager     TokenManager
@@ -311,7 +313,7 @@ func (s *Service) RequestPasswordReset(ctx context.Context, email string) (Passw
 
 	if s.resetCooldown > 0 {
 		cooldownKey := fmt.Sprintf("auth:password_reset:cooldown:%s", user.ID)
-		ok, err := s.cache.SetIfNotExists(cooldownKey, "1", s.resetCooldown)
+		ok, err := s.cache.SetIfNotExists(ctx, cooldownKey, "1", s.resetCooldown)
 		if err != nil {
 			return PasswordResetRequest{}, err
 		}
@@ -328,8 +330,8 @@ func (s *Service) RequestPasswordReset(ctx context.Context, email string) (Passw
 	tokenKey := fmt.Sprintf("auth:password_reset:token:%s", tokenHash)
 	userKey := fmt.Sprintf("auth:password_reset:user:%s", user.ID)
 
-	if existing, err := s.cache.GetString(userKey); err == nil && existing != "" {
-		_ = s.cache.Delete(fmt.Sprintf("auth:password_reset:token:%s", existing))
+	if existing, err := s.cache.GetString(ctx, userKey); err == nil && existing != "" {
+		_ = s.cache.Delete(ctx, fmt.Sprintf("auth:password_reset:token:%s", existing))
 	}
 
 	ttl := s.passwordResetTTL
@@ -337,10 +339,10 @@ func (s *Service) RequestPasswordReset(ctx context.Context, email string) (Passw
 		ttl = 15 * time.Minute
 	}
 
-	if err := s.cache.SetWithTTL(tokenKey, user.ID, ttl); err != nil {
+	if err := s.cache.SetWithTTL(ctx, tokenKey, user.ID, ttl); err != nil {
 		return PasswordResetRequest{}, err
 	}
-	if err := s.cache.SetWithTTL(userKey, tokenHash, ttl); err != nil {
+	if err := s.cache.SetWithTTL(ctx, userKey, tokenHash, ttl); err != nil {
 		return PasswordResetRequest{}, err
 	}
 
@@ -368,7 +370,7 @@ func (s *Service) ResetPassword(ctx context.Context, token, newPassword string) 
 	tokenHash := hashToken(trimmedToken)
 	tokenKey := fmt.Sprintf("auth:password_reset:token:%s", tokenHash)
 
-	userID, err := s.cache.GetString(tokenKey)
+	userID, err := s.cache.GetString(ctx, tokenKey)
 	if err != nil {
 		if errors.Is(err, redisinfra.ErrKeyNotFound) {
 			return ErrInvalidResetToken
@@ -387,7 +389,7 @@ func (s *Service) ResetPassword(ctx context.Context, token, newPassword string) 
 		return ErrInvalidResetToken
 	}
 
-	hashed, err := bcrypt.GenerateFromPassword([]byte(trimmedPassword), bcrypt.DefaultCost)
+	hashed, err := bcrypt.GenerateFromPassword([]byte(trimmedPassword), passwordHashCost)
 	if err != nil {
 		return err
 	}
@@ -399,8 +401,8 @@ func (s *Service) ResetPassword(ctx context.Context, token, newPassword string) 
 		return err
 	}
 
-	_ = s.cache.Delete(tokenKey)
-	_ = s.cache.Delete(fmt.Sprintf("auth:password_reset:user:%s", user.ID))
+	_ = s.cache.Delete(ctx, tokenKey)
+	_ = s.cache.Delete(ctx, fmt.Sprintf("auth:password_reset:user:%s", user.ID))
 	return nil
 }
 

@@ -68,11 +68,11 @@ func New(cfg config.Config) (*Client, error) {
 	}, nil
 }
 
-func (c *Client) Set(key string, value interface{}) error {
-	return c.SetWithTTL(key, value, c.defaultTTL)
+func (c *Client) Set(ctx context.Context, key string, value interface{}) error {
+	return c.SetWithTTL(ctx, key, value, c.defaultTTL)
 }
 
-func (c *Client) SetWithTTL(key string, value interface{}, ttl time.Duration) error {
+func (c *Client) SetWithTTL(ctx context.Context, key string, value interface{}, ttl time.Duration) error {
 	if err := c.validateKey(key); err != nil {
 		return err
 	}
@@ -82,10 +82,10 @@ func (c *Client) SetWithTTL(key string, value interface{}, ttl time.Duration) er
 		return err
 	}
 
-	return c.client.Set(context.Background(), key, payload, ttl).Err()
+	return c.client.Set(ensureContext(ctx), key, payload, ttl).Err()
 }
 
-func (c *Client) SetIfNotExists(key string, value interface{}, ttl time.Duration) (bool, error) {
+func (c *Client) SetIfNotExists(ctx context.Context, key string, value interface{}, ttl time.Duration) (bool, error) {
 	if err := c.validateKey(key); err != nil {
 		return false, err
 	}
@@ -95,19 +95,19 @@ func (c *Client) SetIfNotExists(key string, value interface{}, ttl time.Duration
 		return false, err
 	}
 
-	return c.client.SetNX(context.Background(), key, payload, ttl).Result()
+	return c.client.SetNX(ensureContext(ctx), key, payload, ttl).Result()
 }
 
-func (c *Client) Get(key string) (interface{}, error) {
-	return c.GetBytes(key)
+func (c *Client) Get(ctx context.Context, key string) (interface{}, error) {
+	return c.GetBytes(ctx, key)
 }
 
-func (c *Client) GetBytes(key string) ([]byte, error) {
+func (c *Client) GetBytes(ctx context.Context, key string) ([]byte, error) {
 	if err := c.validateKey(key); err != nil {
 		return nil, err
 	}
 
-	data, err := c.client.Get(context.Background(), key).Bytes()
+	data, err := c.client.Get(ensureContext(ctx), key).Bytes()
 	if err != nil {
 		if errors.Is(err, goredis.Nil) {
 			return nil, ErrKeyNotFound
@@ -118,8 +118,8 @@ func (c *Client) GetBytes(key string) ([]byte, error) {
 	return data, nil
 }
 
-func (c *Client) GetString(key string) (string, error) {
-	data, err := c.GetBytes(key)
+func (c *Client) GetString(ctx context.Context, key string) (string, error) {
+	data, err := c.GetBytes(ctx, key)
 	if err != nil {
 		return "", err
 	}
@@ -130,34 +130,31 @@ func (c *Client) Ping(ctx context.Context) error {
 	if c == nil || c.client == nil {
 		return ErrNilClient
 	}
-	if ctx == nil {
-		ctx = context.Background()
-	}
-	return c.client.Ping(ctx).Err()
+	return c.client.Ping(ensureContext(ctx)).Err()
 }
 
-func (c *Client) LPush(key string, values ...interface{}) (int64, error) {
+func (c *Client) LPush(ctx context.Context, key string, values ...interface{}) (int64, error) {
 	if err := c.validateKey(key); err != nil {
 		return 0, err
 	}
-	return c.client.LPush(context.Background(), key, values...).Result()
+	return c.client.LPush(ensureContext(ctx), key, values...).Result()
 }
 
-func (c *Client) LRange(key string, start, stop int64) ([]string, error) {
+func (c *Client) LRange(ctx context.Context, key string, start, stop int64) ([]string, error) {
 	if err := c.validateKey(key); err != nil {
 		return nil, err
 	}
-	return c.client.LRange(context.Background(), key, start, stop).Result()
+	return c.client.LRange(ensureContext(ctx), key, start, stop).Result()
 }
 
-func (c *Client) LRem(key string, count int64, value interface{}) (int64, error) {
+func (c *Client) LRem(ctx context.Context, key string, count int64, value interface{}) (int64, error) {
 	if err := c.validateKey(key); err != nil {
 		return 0, err
 	}
-	return c.client.LRem(context.Background(), key, count, value).Result()
+	return c.client.LRem(ensureContext(ctx), key, count, value).Result()
 }
 
-func (c *Client) BRPopLPush(source, destination string, timeout time.Duration) (string, error) {
+func (c *Client) BRPopLPush(ctx context.Context, source, destination string, timeout time.Duration) (string, error) {
 	if err := c.validateKey(source); err != nil {
 		return "", err
 	}
@@ -165,7 +162,7 @@ func (c *Client) BRPopLPush(source, destination string, timeout time.Duration) (
 		return "", err
 	}
 
-	data, err := c.client.BRPopLPush(context.Background(), source, destination, timeout).Result()
+	data, err := c.client.BRPopLPush(ensureContext(ctx), source, destination, timeout).Result()
 	if err != nil {
 		if errors.Is(err, goredis.Nil) {
 			return "", ErrKeyNotFound
@@ -175,7 +172,7 @@ func (c *Client) BRPopLPush(source, destination string, timeout time.Duration) (
 	return data, nil
 }
 
-func (c *Client) ZAdd(key string, members ...ZMember) (int64, error) {
+func (c *Client) ZAdd(ctx context.Context, key string, members ...ZMember) (int64, error) {
 	if err := c.validateKey(key); err != nil {
 		return 0, err
 	}
@@ -191,10 +188,10 @@ func (c *Client) ZAdd(key string, members ...ZMember) (int64, error) {
 		})
 	}
 
-	return c.client.ZAdd(context.Background(), key, items...).Result()
+	return c.client.ZAdd(ensureContext(ctx), key, items...).Result()
 }
 
-func (c *Client) ZRangeByScore(key, min, max string, count int64) ([]string, error) {
+func (c *Client) ZRangeByScore(ctx context.Context, key, min, max string, count int64) ([]string, error) {
 	if err := c.validateKey(key); err != nil {
 		return nil, err
 	}
@@ -207,32 +204,39 @@ func (c *Client) ZRangeByScore(key, min, max string, count int64) ([]string, err
 		args.Count = count
 	}
 
-	return c.client.ZRangeByScore(context.Background(), key, args).Result()
+	return c.client.ZRangeByScore(ensureContext(ctx), key, args).Result()
 }
 
-func (c *Client) ZRem(key string, members ...interface{}) (int64, error) {
+func (c *Client) ZRem(ctx context.Context, key string, members ...interface{}) (int64, error) {
 	if err := c.validateKey(key); err != nil {
 		return 0, err
 	}
 	if len(members) == 0 {
 		return 0, nil
 	}
-	return c.client.ZRem(context.Background(), key, members...).Result()
+	return c.client.ZRem(ensureContext(ctx), key, members...).Result()
 }
 
-func (c *Client) GetJSON(key string, dest interface{}) error {
-	data, err := c.GetBytes(key)
+func (c *Client) Eval(ctx context.Context, script string, keys []string, args ...interface{}) (interface{}, error) {
+	if c == nil || c.client == nil {
+		return nil, ErrNilClient
+	}
+	return c.client.Eval(ensureContext(ctx), script, keys, args...).Result()
+}
+
+func (c *Client) GetJSON(ctx context.Context, key string, dest interface{}) error {
+	data, err := c.GetBytes(ctx, key)
 	if err != nil {
 		return err
 	}
 	return json.Unmarshal(data, dest)
 }
 
-func (c *Client) Delete(key string) error {
+func (c *Client) Delete(ctx context.Context, key string) error {
 	if err := c.validateKey(key); err != nil {
 		return err
 	}
-	return c.client.Del(context.Background(), key).Err()
+	return c.client.Del(ensureContext(ctx), key).Err()
 }
 
 func (c *Client) Close() error {
@@ -250,6 +254,13 @@ func (c *Client) validateKey(key string) error {
 		return ErrEmptyKey
 	}
 	return nil
+}
+
+func ensureContext(ctx context.Context) context.Context {
+	if ctx == nil {
+		return context.Background()
+	}
+	return ctx
 }
 
 func marshalValue(value interface{}) (interface{}, error) {
